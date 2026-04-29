@@ -21,9 +21,9 @@ private:
     bool         gameOver    = false; // Devine true când un jucător pierde
 
     // 'static constexpr' = constante care există la compilare, nu ocupă memorie la rulare.
-    static constexpr unsigned int  maxMana          = 10; // Mana maximă pe tur
-    static constexpr std::size_t   startingHandSize = 4;  // Câte cărți primește fiecare jucător la început
-    static constexpr unsigned int  defeatLimit      = 6;  // Câte unități moarte = pierdere
+    static const unsigned int  maxMana          = 10; // Mana maximă pe tur
+    static const std::size_t   startingHandSize = 4;  // Câte cărți primește fiecare jucător la început
+    static const unsigned int  defeatLimit      = 6;  // Câte unități moarte = pierdere
 
     // --- Funcții private: logica internă, inaccesibilă din afară ---
     Player&       currentPlayer();         // Returnează jucătorul al cărui tur este

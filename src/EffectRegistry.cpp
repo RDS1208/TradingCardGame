@@ -2,11 +2,11 @@
 #include "Game.h"
 #include <iostream>
 
-// ============================================================================
+
 // Efecte pentru SpellCard (vrăji)
 // Fiecare efect primește un Card* (pointer brut la ținta vrăjii).
 // Folosim dynamic_cast pentru a verifica dacă ținta e UnitCard.
-// ============================================================================
+
 SpellCard::SpellEffect EffectRegistry::getSpellEffect(const std::string& effectName) {
 
     if (effectName == "FireballEffect") {
@@ -37,10 +37,10 @@ SpellCard::SpellEffect EffectRegistry::getSpellEffect(const std::string& effectN
     return nullptr;
 }
 
-// ============================================================================
+
 // Efecte de atac pentru UnitCard
 // Callback-urile se execută înainte/după aplicarea daunei în onAttack().
-// ============================================================================
+
 UnitCard::AttackEffects EffectRegistry::getUnitAttackEffects(const std::string& effectName) {
 
     if (effectName == "VampiricStrike") {
@@ -60,12 +60,11 @@ UnitCard::AttackEffects EffectRegistry::getUnitAttackEffects(const std::string& 
     return UnitCard::AttackEffects{};
 }
 
-// ============================================================================
+
 // Efecte de tur pentru StructureCard
 // Se execută la fiecare schimbare de tur (Game::changeTurn).
 // Primește Game& datorită relației 'friend class EffectRegistry' din Game.h,
 // ceea ce permite accesul la currentPlayer() și la tabla jucătorului.
-// ============================================================================
 StructureCard::TurnChangeEffect EffectRegistry::getStructureEffect(const std::string& effectName) {
     if (effectName == "HealBase") {
         // Acest lambda primeste structura si jocul curent.
@@ -84,6 +83,21 @@ StructureCard::TurnChangeEffect EffectRegistry::getStructureEffect(const std::st
                     }
                 }
             }
+        };
+    }
+    return nullptr;
+}
+
+
+// Efecte pentru TrapCard (capcane)
+// Se declanșează automat când adversarul atacă.
+// Primesc atacatorul și ținta ca referințe, permițând modificarea lor directă.
+TrapCard::TrapEffect EffectRegistry::getTrapEffect(const std::string& effectName) {
+    if (effectName == "DamageAttacker") {
+        // Capcana face 2 daune atacatorului înainte ca atacul să se rezolve.
+        return [](UnitCard& attacker, UnitCard& /*target*/) {
+            std::cout << attacker.getName() << " takes 2 damage from the trap!\n";
+            attacker.updateHp(-2);
         };
     }
     return nullptr;

@@ -24,7 +24,7 @@ public:
     SpellCard(const SpellCard& other);
     ~SpellCard() override = default;
     SpellCard& operator=(SpellCard other);
-    friend void swap(SpellCard& first, SpellCard& second) noexcept;
+    friend void swap(SpellCard& first, SpellCard& second);
 
     // Apelat de Game chiar înainte de play() pentru a seta ținta aleasă de jucător.
     void setTarget(Card* target) { currentTarget = target; }

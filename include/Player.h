@@ -33,8 +33,8 @@ public:
     explicit Player(std::string name);
     // Move constructor și move assignment: permit mutarea unui Player
     // (necesar pentru că unique_ptr nu poate fi copiat, doar mutat).
-    Player(Player&&) noexcept = default;
-    Player& operator=(Player&&) noexcept = default;
+    Player(Player&&) = default;
+    Player& operator=(Player&&) = default;
     ~Player();
 
     const std::string& getName() const;

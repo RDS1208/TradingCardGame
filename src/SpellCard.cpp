@@ -19,7 +19,7 @@ SpellCard::SpellCard(const SpellCard& other)
       currentTarget(other.currentTarget) {
 }
 
-void swap(SpellCard& first, SpellCard& second) noexcept {
+void swap(SpellCard& first, SpellCard& second) {
     using std::swap;
     swap(static_cast<Card&>(first), static_cast<Card&>(second));
     swap(first.effect,            second.effect);

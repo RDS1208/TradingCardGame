@@ -22,7 +22,7 @@ public:
     Card& operator=(const Card& other);
 
     // 'friend' acordă acestei funcții libere acces la membrii privați de mai sus.
-    friend void swap(Card& first, Card& second) noexcept;
+    friend void swap(Card& first, Card& second);
 
     // Destructorul 'virtual' este obligatoriu când se folosește moștenirea.
     // Fără el, ștergerea unui obiect derivat prin pointer de bază cauzează scurgeri de memorie.

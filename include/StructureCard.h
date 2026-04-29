@@ -36,7 +36,7 @@ public:
     ~StructureCard() override;
     // Operator de atribuire (copy-and-swap)
     StructureCard& operator=(StructureCard other);
-    friend void swap(StructureCard& first, StructureCard& second) noexcept;
+    friend void swap(StructureCard& first, StructureCard& second);
 
     // --- Funcții virtuale moștenite din Card ---
     void onPlayEffect() override;

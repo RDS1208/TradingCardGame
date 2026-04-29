@@ -44,7 +44,7 @@ UnitCard::~UnitCard() {
     }
 }
 
-void swap(UnitCard& first, UnitCard& second) noexcept {
+void swap(UnitCard& first, UnitCard& second) {
     using std::swap;
     // static_cast<Card&> aplică swap-ul și asupra părții moștenite din Card.
     swap(static_cast<Card&>(first), static_cast<Card&>(second));

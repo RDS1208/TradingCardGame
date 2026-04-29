@@ -3,6 +3,7 @@
 #include "UnitCard.h"
 #include "SpellCard.h"
 #include "StructureCard.h"
+#include "TrapCard.h"
 #include "EffectRegistry.h"
 #include "Exceptions.h"
 
@@ -15,31 +16,33 @@
 #include <sstream>
 #include <utility>
 
-namespace {
-
 // Returnează un singur motor de numere aleatorii, inițializat o dată la pornirea programului.
 // 'static' local înseamnă că obiectul este creat prima dată când funcția e apelată
 // și trăiește până la terminarea programului.
-std::mt19937& randomEngine() {
+static std::mt19937& randomEngine() {
     static std::mt19937 engine{std::random_device{}()};
     return engine;
 }
 
 // Verifică dacă o carte de pe tablă este o carte moartă (UnitCard sau StructureCard).
 // dynamic_cast returnează nullptr dacă pointerul nu este de tipul corect.
-bool isDefeatedCard(const std::unique_ptr<Card>& card) {
+static bool isDefeatedCard(const std::unique_ptr<Card>& card) {
     if (const auto* unit = dynamic_cast<const UnitCard*>(card.get())) {
         return !unit->isAlive();
     }
     if (const auto* structure = dynamic_cast<const StructureCard*>(card.get())) {
         return !structure->isAlive();
     }
+    // O capcană declanșată trebuie eliminată de pe tablă.
+    if (const auto* trap = dynamic_cast<const TrapCard*>(card.get())) {
+        return trap->hasTriggered();
+    }
     return false;
 }
 
 // Împarte un șir de text după un delimitator și returnează un vector de token-uri.
 // Exemplu: "Unit|Squire|1|1|2" cu delimitator '|' → {"Unit","Squire","1","1","2"}
-std::vector<std::string> splitString(const std::string& str, char delimiter) {
+static std::vector<std::string> splitString(const std::string& str, char delimiter) {
     std::vector<std::string> tokens;
     std::string token;
     std::istringstream stream(str);
@@ -51,7 +54,7 @@ std::vector<std::string> splitString(const std::string& str, char delimiter) {
 
 // Citește fișierul deck.txt și construiește un vector de cărți.
 // Fișierul este citit la rulare, deci poți modifica cărțile fără să recompilezi.
-std::vector<std::unique_ptr<Card>> makeBaseDeck(const std::string& filename = "deck.txt") {
+static std::vector<std::unique_ptr<Card>> makeBaseDeck(const std::string& filename = "deck.txt") {
     std::vector<std::unique_ptr<Card>> deck;
     std::ifstream file(filename);
 
@@ -102,12 +105,20 @@ std::vector<std::unique_ptr<Card>> makeBaseDeck(const std::string& filename = "d
             StructureCard::TurnChangeEffect effect = EffectRegistry::getStructureEffect(effectKey);
             deck.push_back(std::make_unique<StructureCard>(name, mana, hp, effect, summary));
         }
+        // Parsare linie Trap: Trap|Name|Mana|EffectKey|EffectSummary
+        else if (parts[0] == "Trap" && parts.size() >= 5) {
+            const std::string& name      = parts[1];
+            unsigned           mana      = static_cast<unsigned>(std::stoul(parts[2]));
+            const std::string& effectKey = parts[3];
+            const std::string& summary   = parts[4];
+
+            TrapCard::TrapEffect effect = EffectRegistry::getTrapEffect(effectKey);
+            deck.push_back(std::make_unique<TrapCard>(name, mana, effect, summary));
+        }
     }
 
     return deck;
 }
-
-} // namespace
 
 
 Game::Game(const std::string& playerOneName, const std::string& playerTwoName)
@@ -317,6 +328,23 @@ bool Game::tryAttack(std::size_t attackerIndex, std::size_t targetIndex) {
     // Verificăm că ambele cărți există, sunt unități și sunt în viață.
     if (!attacker || !target || !attacker->isAlive() || !target->isAlive()) return false;
     if (attacker->hasAttacked()) return false; // O unitate poate ataca o singură dată pe tur.
+
+    // --- Verificăm capcanele adversarului ---
+    // Dacă jucătorul care se apără are TrapCard-uri pe tablă, le declanșăm.
+    for (auto& card : defenderPlayer.board) {
+        auto* trap = dynamic_cast<TrapCard*>(card.get());
+        if (trap && !trap->hasTriggered()) {
+            trap->trigger(*attacker, *target);
+            break; // Se declanșează doar o singură capcană per atac.
+        }
+    }
+
+    // Dacă atacatorul a murit din cauza capcanei, atacul nu mai continuă.
+    if (!attacker->isAlive()) {
+        cleanupDefeatedCards();
+        updateGameOverState();
+        return true;
+    }
 
     attacker->onAttack(*target);
 

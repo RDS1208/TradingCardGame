@@ -4,24 +4,11 @@
 
 #include <exception>
 #include <string>
-
-// ============================================================================
-// Ierarhia de excepții a jocului
-//
-// std::exception        ← clasa standard din C++ (părintele tuturor erorilor)
-//   └─ GameException    ← clasa noastră de bază pentru toate erorile din joc
-//       ├─ DeckLoadException          (eroare la încărcarea fișierului deck.txt)
-//       ├─ InvalidCardStatException   (eroare la crearea unei cărți invalide)
-//       └─ NotEnoughManaException     (eroare când jucătorul nu are destulă mana)
-//
-// Această ierarhie este COMPLET INDEPENDENTĂ de ierarhia Card/UnitCard/SpellCard.
-// ============================================================================
-
 // Clasa de bază pentru toate erorile din jocul nostru.
 // Moștenește din std::exception ca să poată fi prinsă cu catch(const std::exception&).
 class GameException : public std::exception {
 protected:
-    std::string mesaj; // Mesajul de eroare în limba română
+    std::string mesaj; // Mesajul de eroare
 
 public:
     // 'explicit' previne conversii accidentale din string în GameException.
@@ -30,7 +17,7 @@ public:
     // Suprascriem what() din std::exception.
     // 'noexcept' promite că această funcție nu aruncă alte excepții.
     // .c_str() convertește std::string în char* (formatul cerut de std::exception).
-    const char* what() const noexcept override {
+    const char* what() const override {
         return mesaj.c_str();
     }
 };

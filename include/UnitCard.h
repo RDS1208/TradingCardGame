@@ -40,7 +40,7 @@ public:
     UnitCard(const UnitCard& other);
     ~UnitCard() override;
     UnitCard& operator=(UnitCard other);
-    friend void swap(UnitCard& first, UnitCard& second) noexcept;
+    friend void swap(UnitCard& first, UnitCard& second);
 
     void onPlayEffect() override;
     void onDeath() override;

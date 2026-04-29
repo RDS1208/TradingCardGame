@@ -19,7 +19,7 @@ Card::Card(const Card& other)
     : id(nextId++), name(other.name), manaCost(other.manaCost) {
 }
 
-void swap(Card& first, Card& second) noexcept {
+void swap(Card& first, Card& second) {
     using std::swap;
     swap(first.id,       second.id);
     swap(first.name,     second.name);

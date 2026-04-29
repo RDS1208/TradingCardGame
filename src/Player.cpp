@@ -9,7 +9,6 @@
 namespace {
 
 // Funcție ajutătoare: afișează o listă de cărți (mână sau tablă) cu indexul lor.
-// Este în 'namespace anonim' — vizibilă doar în acest fișier .cpp.
 void displayCardList(const std::vector<std::unique_ptr<Card>>& cards,
                      const char* title,
                      std::ostream& os) {

@@ -8,13 +8,6 @@
 #include <limits>
 #include <string>
 
-// ============================================================================
-// GameHelpers: funcții 'inline' pentru interacțiunea cu terminalul.
-// 'inline' înseamnă că funcția poate fi definită într-un header fără erori
-// de link-are, fiindcă compilatorul o "lipete" direct în locul apelului.
-// Aceste funcții separă logica de I/O (citire/afișare) de logica de joc.
-// ============================================================================
-
 // Curăță starea eronată a cin și aruncă orice caracter rămas în buffer.
 inline void clearInput() {
     std::cin.clear();
@@ -45,6 +38,7 @@ inline void showTurnMenu(const Game& game) {
     std::cout << "3) See both boards\n";
     std::cout << "4) Attack\n";
     std::cout << "5) End turn\n";
+    std::cout << "6) Exit Game\n";
 }
 
 inline void handlePlayCard(Game& game) {

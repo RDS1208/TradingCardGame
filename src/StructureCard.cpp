@@ -33,7 +33,7 @@ StructureCard::~StructureCard() = default;
 
 // Swap: interschimbă toți membrii între două StructureCard-uri.
 // static_cast<Card&> face swap și pe partea moștenită din Card.
-void swap(StructureCard& first, StructureCard& second) noexcept {
+void swap(StructureCard& first, StructureCard& second) {
     using std::swap;
     swap(static_cast<Card&>(first), static_cast<Card&>(second));
     swap(first.effect,        second.effect);

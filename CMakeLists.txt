@@ -9,6 +9,7 @@ add_executable(TradingCardGame
     src/UnitCard.cpp
     src/SpellCard.cpp
     src/StructureCard.cpp
+    src/TrapCard.cpp
     src/EffectRegistry.cpp
     src/Player.cpp
     src/Game.cpp
