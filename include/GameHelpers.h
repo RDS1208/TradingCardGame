@@ -29,6 +29,7 @@ inline int readInt(const std::string& prompt) {
     }
 }
 
+
 inline void showTurnMenu(const Game& game) {
     std::cout << "----------------------------------------\n";
     std::cout << "Current player: " << game.currentPlayerName() << "\n";

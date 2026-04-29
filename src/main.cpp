@@ -7,10 +7,18 @@
 int main() {
 
     try {
-        Game game("Alice", "Bob");
+        std::string plaerOneName;
+        std::string plaerTwoName;
+
+        std::cout << "Enter player one name: ";
+        std::getline(std::cin, plaerOneName);
+        std::cout << "Enter player two name: ";
+        std::getline(std::cin, plaerTwoName);
+
+        Game game(plaerOneName, plaerTwoName);
         game.startGame();
 
-        std::cout << "Match started between Alice and Bob.\n";
+        std::cout << "Match started between " << plaerOneName << " and " << plaerTwoName << ".\n";
         std::cout << "Each turn: you can play, inspect hand/boards, attack, or end turn.\n\n";
 
         // Bucla principală a jocului: se repetă până când un jucător pierde.
