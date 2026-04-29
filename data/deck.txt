@@ -1,0 +1,16 @@
+# Unit format:      Unit|Name|Mana|Attack|HP|EffectKey|EffectSummary
+# Spell format:     Spell|Name|Mana|EffectKey|EffectSummary
+# Structure format: Structure|Name|Mana|HP|EffectKey|EffectSummary
+Unit|Squire|1|1|2|None|Basic strike
+Unit|Guard|2|2|3|None|Defensive stance
+Unit|Scout|1|1|1|None|Quick attack
+Unit|Archer|3|3|2|None|Ranged pressure
+Unit|Knight|4|4|5|None|Heavy charge
+Unit|Mage Apprentice|3|3|1|None|Arcane burst
+Unit|Berserker|5|5|4|None|Aggressive swing
+Unit|Captain|4|4|4|None|Battle command
+Unit|Paladin|5|5|6|None|Holy strike
+Spell|Fireball|2|FireballEffect|Deal 3 damage to any unit.
+Spell|Heal|1|HealEffect|Restore 3 HP to any unit.
+Unit|Vampire|3|2|4|VampiricStrike|Heals 1 HP on attack.
+Structure|Healing Shrine|2|5|HealBase|Heals your base 1 HP each turn.

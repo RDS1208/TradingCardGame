@@ -1,0 +1,16 @@
+# Build directories
+build/
+cmake-build-debug/
+cmake-build-local/
+
+# Auto-copied deck.txt in root (the real one is in data/deck.txt)
+/deck.txt
+
+# IDE files
+.idea/
+
+# Error logs
+*.err
+
+# Private documentation (not for the repo)
+docs_private/
