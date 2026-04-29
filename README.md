@@ -33,17 +33,6 @@ TradingCardGame/
     ├── Game.cpp
     └── EffectRegistry.cpp
 ```
-
----
-
-## Cum se compilează și rulează
-
-```bash
-cmake -S . -B build
-cmake --build build --config Release
-./TradingCardGame.exe
-```
-
 Pachetul de cărți (`data/deck.txt`) este copiat automat lângă executabil prin regula `POST_BUILD` din `CMakeLists.txt`.
 
 ---
