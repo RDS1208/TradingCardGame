@@ -50,6 +50,10 @@ Fiecare jucător primește un pachet de cărți citit din `deck.txt`. La începu
 
 La fiecare tur nou, jucătorul trage o carte și primește +1 mana (maxim 10).
 
+Mana este resursa folosita pentru a juca o carte din mana, fiecare carte are indiferent de tip un cost de mana (1->10).
+
+Jucatorii folosesc mana si joaca cartile din mana pe masa,fiecare jucator are propria masa cu cartile jucate,carti ce pot fii atacate de jucatorul advers
+
 **Condiția de victorie:** Primul jucător care pierde 6 unități de pe tablă pierde meciul.
 
 ---
@@ -126,3 +130,10 @@ Spell|Fireball|2|FireballEffect|Deal 3 damage to any unit.
 Structure|Healing Shrine|2|5|HealBase|Heals all units 1 HP each turn.
 Trap|Spike Trap|1|DamageAttacker|Deals 2 damage to the attacker.
 ```
+
+## Exemple jocuri asemanatoare
+````
+
+Hearthstone
+Magic the Gathering
+Yu-Gi-Oh!
