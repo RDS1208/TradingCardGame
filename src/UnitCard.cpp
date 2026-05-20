@@ -12,10 +12,9 @@ UnitCard::UnitCard(const std::string& name, unsigned manaCost, int attack, int h
 
 UnitCard::UnitCard(const std::string& name, unsigned manaCost, int attack, int hp,
                    const AttackEffects& effects, const std::string& attackEffectSummary)
-    : Card(name, manaCost),
+    : Card(name, manaCost, attackEffectSummary),
       onAttackBefore(effects.onBefore),
       onAttackAfter(effects.onAfter),
-      attackEffectSummary(attackEffectSummary),
       attack(attack),
       hp(hp),
       isDead(false),
@@ -23,42 +22,42 @@ UnitCard::UnitCard(const std::string& name, unsigned manaCost, int attack, int h
     ++totalCreated;
 }
 
-// Constructor de copiere: copiază toți membrii și incrementează contorul.
+// Constructorul de copiere: este apelat atunci cand cream o carte noua ca o copie a uneia existente.
 UnitCard::UnitCard(const UnitCard& other)
-    : Card(other), // apelează constructorul de copiere al clasei de bază (Card)
+    : Card(other), // Apeleaza mai intai constructorul de copiere al clasei parinte (Card)
       onAttackBefore(other.onAttackBefore),
       onAttackAfter(other.onAttackAfter),
-      attackEffectSummary(other.attackEffectSummary),
       attack(other.attack),
       hp(other.hp),
       isDead(other.isDead),
       hasAttackedThisTurn(other.hasAttackedThisTurn) {
-    ++totalCreated;
+    ++totalCreated; // Incrementam numarul total de unitati create in memorie
 }
 
-// Destructorul: dacă unitatea nu a murit în joc, o numărăm ca distrusă acum.
-// Acest lucru se întâmplă când jocul se termină și vectorii sunt eliberați din memorie.
+// Destructorul: apelat automat cand cartea este distrusa definitiv din memorie.
 UnitCard::~UnitCard() {
     if (!isDead) {
-        ++totalDestroyed;
+        ++totalDestroyed; // Daca unitatea era inca vie pe tabla, o numaram acum ca distrusa
     }
 }
 
+// Functie de intrajutorare care schimba toate datele intre doua unitati.
 void swap(UnitCard& first, UnitCard& second) {
     using std::swap;
-    // static_cast<Card&> aplică swap-ul și asupra părții moștenite din Card.
+    // static_cast<Card&> ne permite sa schimbam datele mostenite din clasa parinte (Card)
     swap(static_cast<Card&>(first), static_cast<Card&>(second));
     swap(first.onAttackBefore,      second.onAttackBefore);
     swap(first.onAttackAfter,       second.onAttackAfter);
-    swap(first.attackEffectSummary, second.attackEffectSummary);
     swap(first.attack,              second.attack);
     swap(first.hp,                  second.hp);
     swap(first.isDead,              second.isDead);
     swap(first.hasAttackedThisTurn, second.hasAttackedThisTurn);
 }
 
-// Operator de atribuire prin copy-and-swap: 'other' este primit prin valoare (se copiază),
-// apoi conținutul este schimbat cu *this. La ieșire, copia temporară este distrusă automat.
+// Operatorul de atribuire (=): foloseste tehnica extrem de sigura "Copy-and-Swap".
+// Pasul 1: Parametrul 'other' este primit prin valoare, deci compilatorul face automat o copie a sa.
+// Pasul 2: Facem 'swap' intre datele noastre curent si copia 'other'.
+// Pasul 3: Cand functia se termina, copia (care acum are datele noastre vechi) este stearsa automat din memorie.
 UnitCard& UnitCard::operator=(UnitCard other) {
     swap(*this, other);
     return *this;
@@ -88,9 +87,8 @@ void UnitCard::displayDetails(std::ostream& os) const {
     if (hasAttackedThisTurn) {
         os << " [exhausted]";
     }
-    if (!attackEffectSummary.empty()) {
-        os << " | Effect: " << attackEffectSummary;
-    }
+    // Apelăm și afișarea efectului din clasa de bază.
+    Card::displayDetails(os);
 }
 
 void UnitCard::onAttack(UnitCard& targetCard) {
@@ -122,5 +120,5 @@ void UnitCard::updateHp(int amount) {
 void UnitCard::clearAttackEffects() {
     onAttackBefore      = nullptr;
     onAttackAfter       = nullptr;
-    attackEffectSummary = "";
+    effectSummary = "";
 }

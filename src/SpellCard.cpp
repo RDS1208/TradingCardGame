@@ -3,19 +3,17 @@
 #include <utility>
 
 SpellCard::SpellCard(const std::string& name, unsigned manaCost, const std::string& description)
-    : Card(name, manaCost), effect(nullptr), effectDescription(description), currentTarget(nullptr) {
+    : Card(name, manaCost, description), effect(nullptr), currentTarget(nullptr) {
 }
 
 SpellCard::SpellCard(const std::string& name, unsigned manaCost,
                      SpellEffect effect, const std::string& description)
-    // std::move transferă lambda-ul în loc să-l copieze.
-    : Card(name, manaCost), effect(std::move(effect)), effectDescription(description), currentTarget(nullptr) {
+    : Card(name, manaCost, description), effect(std::move(effect)), currentTarget(nullptr) {
 }
 
 SpellCard::SpellCard(const SpellCard& other)
     : Card(other),
       effect(other.effect),
-      effectDescription(other.effectDescription),
       currentTarget(other.currentTarget) {
 }
 
@@ -23,7 +21,6 @@ void swap(SpellCard& first, SpellCard& second) {
     using std::swap;
     swap(static_cast<Card&>(first), static_cast<Card&>(second));
     swap(first.effect,            second.effect);
-    swap(first.effectDescription, second.effectDescription);
     swap(first.currentTarget,     second.currentTarget);
 }
 
@@ -49,7 +46,5 @@ std::unique_ptr<Card> SpellCard::clone() const {
 
 void SpellCard::displayDetails(std::ostream& os) const {
     os << " [Spell]";
-    if (!effectDescription.empty()) {
-        os << " Effect: " << effectDescription;
-    }
+    Card::displayDetails(os);
 }

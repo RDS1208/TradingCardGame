@@ -22,7 +22,7 @@ private:
 
     // 'static constexpr' = constante care există la compilare, nu ocupă memorie la rulare.
     static const unsigned int  maxMana          = 10; // Mana maximă pe tur
-    static const std::size_t   startingHandSize = 4;  // Câte cărți primește fiecare jucător la început
+    static const int           startingHandSize = 4;  // Câte cărți primește fiecare jucător la început
     static const unsigned int  defeatLimit      = 6;  // Câte unități moarte = pierdere
 
     // --- Funcții private: logica internă, inaccesibilă din afară ---
@@ -33,7 +33,7 @@ private:
 
     void          resetPlayers();           // Resetează tot pentru un joc nou
     static void   shuffleDeck(Player& player);  // Amestecă pachetul
-    static void   drawCards(Player& player, std::size_t count); // Trage cărți din pachet
+    static void   drawCards(Player& player, int count); // Trage cărți din pachet
     void          dealStartingHands();     // Distribuie mâinile inițiale
     static unsigned int cleanupBoard(Player& player); // Șterge cărțile moarte de pe tablă
     void          cleanupDefeatedCards();   // Curăță ambele table
@@ -46,10 +46,10 @@ public:
     // --- Funcții publice: interfata folosită din main.cpp ---
     void startGame();                      // Inițializează și împart cărțile
     void changeTurn();                     // Trece la următorul tur
-    bool isSpellCard(std::size_t index) const; // Verifică dacă o carte din mână e vrajă
-    bool tryPlayCardFromHand(std::size_t index);  // Joacă o carte (Unit/Structure) pe tablă
-    bool tryPlaySpellFromHand(std::size_t handIndex, int targetIndex, bool isEnemy); // Lansează o vrajă
-    bool tryAttack(std::size_t attackerIndex, std::size_t targetIndex); // Atacă o țintă
+    bool isSpellCard(int index) const; // Verifică dacă o carte din mână e vrajă
+    bool tryPlayCardFromHand(int index);  // Joacă o carte (Unit/Structure) pe tablă
+    bool tryPlaySpellFromHand(int handIndex, int targetIndex, bool isEnemy); // Lansează o vrajă
+    bool tryAttack(int attackerIndex, int targetIndex); // Atacă o țintă
     bool isGameOver() const;
 
     const std::string& currentPlayerName() const;

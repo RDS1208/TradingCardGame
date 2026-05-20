@@ -6,29 +6,27 @@
 #include <ostream>
 #include <utility>
 
-namespace {
-
-// Funcție ajutătoare: afișează o listă de cărți (mână sau tablă) cu indexul lor.
-void displayCardList(const std::vector<std::unique_ptr<Card>>& cards,
-                     const char* title,
-                     std::ostream& os) {
+// Cuvantul cheie 'static' in fata unei functii dintr-un fisier .cpp
+// inseamna ca aceasta functie poate fi apelata DOAR in interiorul acestui fisier.
+// Este un mod excelent de a evita conflictele de nume cu alte fisiere.
+static void displayCardList(const std::vector<std::unique_ptr<Card>>& cards,
+                            const char* title,
+                            std::ostream& os) {
     os << title << ":\n";
     if (cards.empty()) {
         os << "  (empty)\n";
         return;
     }
-    for (std::size_t i = 0; i < cards.size(); ++i) {
+    int size = (int)cards.size();
+    for (int i = 0; i < size; ++i) {
         os << "  [" << i << "] ";
         if (cards[i]) {
-            // Apel polimorfic: display() apelează displayDetails() specific tipului real.
             cards[i]->display(os);
         } else {
             os << "(null)\n";
         }
     }
 }
-
-} // namespace
 
 Player::Player() = default;
 

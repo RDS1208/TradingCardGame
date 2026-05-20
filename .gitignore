@@ -13,3 +13,12 @@ cmake-build-local/
 
 # Private documentation
 docs_private/
+
+# Executables and build output
+TradingCardGame.exe
+*.exe
+*.o
+*.obj
+
+# Personal evaluations and logs
+CODE_REVIEW.doc

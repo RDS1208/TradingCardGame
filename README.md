@@ -108,7 +108,19 @@ Cărțile au efecte configurabile prin lambda-uri, stocate ca `std::function`:
 - **StructureCard:** `TurnChangeEffect` (efect la fiecare tur)
 - **TrapCard:** `TrapEffect` (efect la declanșare, primește atacatorul și ținta)
 
-Efectele sunt definite în `EffectRegistry.cpp` și mapate prin chei-text din `deck.txt` (ex: `"FireballEffect"`, `"VampiricStrike"`, `"HealBase"`, `"DamageAttacker"`).
+Efectele sunt definite în `EffectRegistry.cpp` și mapate prin chei-text din `deck.txt` (ex: `"FireballEffect"`, `"VampiricStrike"`).
+
+### Design Patterns
+- **Singleton**: `EffectRegistry` garantează că există o singură instanță (un singur registru global) din care clasele își pot prelua efectele lambda.
+- **Factory (Simple Factory)**: `CardFactory` se ocupă de crearea cărților din șirurile de caractere (parsarea fișierului deck.txt), decuplând logica de generare a cărților de logica principală din `Game.cpp`.
+- **Strategy**: Efectele menționate mai sus (`std::function` transmise în constructor) reprezintă un șablon Strategy, modificând comportamentul cărților fără a crea o ierarhie stufoasă de clase.
+
+### Programare Generică (Templates)
+Sistemul de excepții folosește o abordare template pentru a transmite detalii suplimentare dinamice:
+- Clasa abstractă `GameExceptionBase` pentru prinderea generică.
+- Clasa șablon `GameException<T>` cu un atribut `T detalii`.
+- Excepțiile derivate asociază tipuri concrete: `DeckLoadException` (`T = std::string`), `NotEnoughManaException` (`T = unsigned`).
+- Funcția liberă template `printExceptionDetails(const GameException<T>&)` afișează conținutul generic.
 
 ---
 

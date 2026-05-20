@@ -13,7 +13,6 @@ public:
 
 private:
     SpellEffect  effect;
-    std::string  effectDescription;
     Card*        currentTarget; // Pointer brut: vrăjile nu dețin ținta, doar o referențiază temporar.
 
 public:

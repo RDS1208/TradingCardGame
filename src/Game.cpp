@@ -1,5 +1,6 @@
 #include "Game.h"
 
+#include "CardFactory.h"
 #include "UnitCard.h"
 #include "SpellCard.h"
 #include "StructureCard.h"
@@ -13,19 +14,13 @@
 #include <iostream>
 #include <memory>
 #include <random>
-#include <sstream>
 #include <utility>
 
-// Returnează un singur motor de numere aleatorii, inițializat o dată la pornirea programului.
-// 'static' local înseamnă că obiectul este creat prima dată când funcția e apelată
-// și trăiește până la terminarea programului.
 static std::mt19937& randomEngine() {
     static std::mt19937 engine{std::random_device{}()};
     return engine;
 }
 
-// Verifică dacă o carte de pe tablă este o carte moartă (UnitCard sau StructureCard).
-// dynamic_cast returnează nullptr dacă pointerul nu este de tipul corect.
 static bool isDefeatedCard(const std::unique_ptr<Card>& card) {
     if (const auto* unit = dynamic_cast<const UnitCard*>(card.get())) {
         return !unit->isAlive();
@@ -33,27 +28,12 @@ static bool isDefeatedCard(const std::unique_ptr<Card>& card) {
     if (const auto* structure = dynamic_cast<const StructureCard*>(card.get())) {
         return !structure->isAlive();
     }
-    // O capcană declanșată trebuie eliminată de pe tablă.
     if (const auto* trap = dynamic_cast<const TrapCard*>(card.get())) {
         return trap->hasTriggered();
     }
     return false;
 }
 
-// Împarte un șir de text după un delimitator și returnează un vector de token-uri.
-// Exemplu: "Unit|Squire|1|1|2" cu delimitator '|' → {"Unit","Squire","1","1","2"}
-static std::vector<std::string> splitString(const std::string& str, char delimiter) {
-    std::vector<std::string> tokens;
-    std::string token;
-    std::istringstream stream(str);
-    while (std::getline(stream, token, delimiter)) {
-        tokens.push_back(token);
-    }
-    return tokens;
-}
-
-// Citește fișierul deck.txt și construiește un vector de cărți.
-// Fișierul este citit la rulare, deci poți modifica cărțile fără să recompilezi.
 static std::vector<std::unique_ptr<Card>> makeBaseDeck(const std::string& filename = "deck.txt") {
     std::vector<std::unique_ptr<Card>> deck;
     std::ifstream file(filename);
@@ -65,55 +45,12 @@ static std::vector<std::unique_ptr<Card>> makeBaseDeck(const std::string& filena
     std::string line;
     while (std::getline(file, line)) {
         if (line.empty() || line[0] == '#') {
-            continue; // Sărim liniile goale și comentariile din fișier.
+            continue;
         }
 
-        std::vector<std::string> parts = splitString(line, '|');
-        if (parts.empty()) continue;
-
-        if (parts[0] == "Unit" && parts.size() >= 7) {
-            const std::string& name      = parts[1];
-            // std::stoul convertește un string în unsigned long; îl convertim la unsigned.
-            unsigned           mana      = static_cast<unsigned>(std::stoul(parts[2]));
-            int                attack    = std::stoi(parts[3]);
-            int                hp        = std::stoi(parts[4]);
-            const std::string& effectKey = parts[5];
-            const std::string& summary   = parts[6];
-
-            if (effectKey != "None") {
-                UnitCard::AttackEffects effects = EffectRegistry::getUnitAttackEffects(effectKey);
-                deck.push_back(std::make_unique<UnitCard>(name, mana, attack, hp, effects, summary));
-            } else {
-                deck.push_back(std::make_unique<UnitCard>(name, mana, attack, hp, summary));
-            }
-        }
-        else if (parts[0] == "Spell" && parts.size() >= 5) {
-            const std::string&     name      = parts[1];
-            unsigned               mana      = static_cast<unsigned>(std::stoul(parts[2]));
-            const std::string&     effectKey = parts[3];
-            const std::string&     summary   = parts[4];
-            SpellCard::SpellEffect effect    = EffectRegistry::getSpellEffect(effectKey);
-            deck.push_back(std::make_unique<SpellCard>(name, mana, effect, summary));
-        }
-        else if (parts[0] == "Structure" && parts.size() >= 6) {
-            const std::string& name      = parts[1];
-            unsigned           mana      = static_cast<unsigned>(std::stoul(parts[2]));
-            int                hp        = std::stoi(parts[3]);
-            const std::string& effectKey = parts[4];
-            const std::string& summary   = parts[5];
-            
-            StructureCard::TurnChangeEffect effect = EffectRegistry::getStructureEffect(effectKey);
-            deck.push_back(std::make_unique<StructureCard>(name, mana, hp, effect, summary));
-        }
-        // Parsare linie Trap: Trap|Name|Mana|EffectKey|EffectSummary
-        else if (parts[0] == "Trap" && parts.size() >= 5) {
-            const std::string& name      = parts[1];
-            unsigned           mana      = static_cast<unsigned>(std::stoul(parts[2]));
-            const std::string& effectKey = parts[3];
-            const std::string& summary   = parts[4];
-
-            TrapCard::TrapEffect effect = EffectRegistry::getTrapEffect(effectKey);
-            deck.push_back(std::make_unique<TrapCard>(name, mana, effect, summary));
+        std::unique_ptr<Card> card = CardFactory::createCard(line);
+        if (card) {
+            deck.push_back(std::move(card));
         }
     }
 
@@ -166,7 +103,7 @@ void Game::shuffleDeck(Player& player) {
     std::shuffle(player.deck.begin(), player.deck.end(), randomEngine());
 }
 
-void Game::drawCards(Player& player, std::size_t count) {
+void Game::drawCards(Player& player, int count) {
     while (count > 0 && !player.deck.empty()) {
         // Mutăm ultima carte din pachet în mână (std::move evită copierea).
         player.hand.push_back(std::move(player.deck.back()));
@@ -183,23 +120,25 @@ void Game::dealStartingHands() {
 }
 
 unsigned int Game::cleanupBoard(Player& player) {
+    std::vector<std::unique_ptr<Card>> survivors;
     unsigned int removed = 0;
-    std::size_t  index   = 0;
 
-    while (index < player.board.size()) {
-        if (isDefeatedCard(player.board[index])) {
-            // Swap-and-pop: mutăm carta moartă la final, apoi o ștergem.
-            // Evită deplasarea întregului vector (mai eficient decât erase la mijloc).
-            std::swap(player.board[index], player.board.back());
-            player.board.pop_back();
+    // Trecem prin toate cartile de pe tabla.
+    // Daca o carte este infranta (distrusa/activata), o numaram ca fiind eliminata.
+    // Daca este inca activa, o salvam in lista de supravietuitori.
+    for (auto& card : player.board) {
+        if (isDefeatedCard(card)) {
             ++removed;
-            continue; // Nu incrementăm index: noua carte la [index] trebuie verificată.
+        } else {
+            survivors.push_back(std::move(card));
         }
-        ++index;
     }
 
+    // Inlocuim tabla veche cu noua lista de carti supravietuitoare.
+    player.board = std::move(survivors);
+
     player.defeatedUnitCards += removed;
-    // Plafonăm la defeatLimit pentru a evita depășiri accidentale.
+    // Plafonam numarul total de carti infrante pentru a nu depasi limita jocului.
     if (player.defeatedUnitCards > defeatLimit) {
         player.defeatedUnitCards = defeatLimit;
     }
@@ -249,54 +188,57 @@ void Game::changeTurn() {
     }
 }
 
-bool Game::isSpellCard(std::size_t index) const {
+bool Game::isSpellCard(int index) const {
     const Player& player = currentPlayer();
-    if (index >= player.hand.size()) return false;
+    if (index < 0 || index >= (int)player.hand.size()) return false;
     // dynamic_cast returnează nullptr dacă nu este SpellCard → bool false.
     return dynamic_cast<SpellCard*>(player.hand[index].get()) != nullptr;
 }
 
-bool Game::tryPlayCardFromHand(std::size_t index) {
+bool Game::tryPlayCardFromHand(int index) {
     if (gameOver) return false;
 
     Player& player = currentPlayer();
-    if (index >= player.hand.size()) return false;
+    if (index < 0 || index >= (int)player.hand.size()) return false;
 
-    std::unique_ptr<Card>& card = player.hand[index];
+    Card* card = player.hand[index].get();
     if (!card) return false;
+
+    // Verificăm costul de mană
     if (card->getManaCost() > player.mana) {
-        throw NotEnoughManaException(card->getName());
+        throw NotEnoughManaException(card->getName(), card->getManaCost());
     }
 
     player.mana -= card->getManaCost();
     card->play();
-    // std::move transferă proprietatea din mână pe tablă; pointerul din mână devine null.
-    player.board.push_back(std::move(card));
-    // Ștergem slotul null rămas în mână după move.
-    player.hand.erase(player.hand.begin() + static_cast<std::ptrdiff_t>(index));
+
+    // Mutăm cartea din mână direct pe tablă.
+    player.board.push_back(std::move(player.hand[index]));
+    player.hand.erase(player.hand.begin() + index);
     return true;
 }
 
-bool Game::tryPlaySpellFromHand(std::size_t handIndex, int targetIndex, bool isEnemy) {
+bool Game::tryPlaySpellFromHand(int handIndex, int targetIndex, bool isEnemy) {
     if (gameOver) return false;
 
     Player& player = currentPlayer();
-    if (handIndex >= player.hand.size()) return false;
+    if (handIndex < 0 || handIndex >= (int)player.hand.size()) return false;
 
-    std::unique_ptr<Card>& card = player.hand[handIndex];
+    Card* card = player.hand[handIndex].get();
     if (!card) return false;
+
     if (card->getManaCost() > player.mana) {
-        throw NotEnoughManaException(card->getName());
+        throw NotEnoughManaException(card->getName(), card->getManaCost());
     }
 
-    auto* spell = dynamic_cast<SpellCard*>(card.get());
+    auto* spell = dynamic_cast<SpellCard*>(card);
     if (!spell) return false;
 
+    // Identificăm ținta vrăjii, dacă există
     Card* target = nullptr;
     if (targetIndex >= 0) {
-        // Alegem tabla inamicului sau a jucătorului curent în funcție de isEnemy.
         Player& targetPlayer = isEnemy ? opposingPlayer() : currentPlayer();
-        if (static_cast<std::size_t>(targetIndex) < targetPlayer.board.size()) {
+        if (targetIndex < (int)targetPlayer.board.size()) {
             target = targetPlayer.board[targetIndex].get();
         }
     }
@@ -304,21 +246,23 @@ bool Game::tryPlaySpellFromHand(std::size_t handIndex, int targetIndex, bool isE
     spell->setTarget(target);
     player.mana -= card->getManaCost();
     spell->play();
-    // Vraja este aruncată după joc — nu merge pe tablă, ci dispare din mână.
-    player.hand.erase(player.hand.begin() + static_cast<std::ptrdiff_t>(handIndex));
+
+    // Vrăjile nu rămân pe tablă, ci sunt șterse din mână după utilizare.
+    player.hand.erase(player.hand.begin() + handIndex);
 
     cleanupDefeatedCards();
     updateGameOverState();
     return true;
 }
 
-bool Game::tryAttack(std::size_t attackerIndex, std::size_t targetIndex) {
+bool Game::tryAttack(int attackerIndex, int targetIndex) {
     if (gameOver) return false;
 
     Player& attackerPlayer = currentPlayer();
     Player& defenderPlayer = opposingPlayer();
 
-    if (attackerIndex >= attackerPlayer.board.size() || targetIndex >= defenderPlayer.board.size()) {
+    if (attackerIndex < 0 || attackerIndex >= (int)attackerPlayer.board.size() || 
+        targetIndex < 0 || targetIndex >= (int)defenderPlayer.board.size()) {
         return false;
     }
 

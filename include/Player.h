@@ -7,32 +7,29 @@
 #include <string>
 #include <vector>
 
-// Declarație anticipată: compilatorul știe că Card există, fără să includă tot Card.h.
+// Declaram doar numele clasei ca sa nu includem tot fisierul Card.h si sa ingreunam compilarea.
 class Card;
 
-// Player reprezintă un jucător cu pachet, mână și tablă de joc.
-// Membrii sunt privați, dar Game și EffectRegistry au acces prin 'friend'.
 class Player {
-    // 'friend class' acordă acces complet la membrii privați.
-    // Game are nevoie să mute cărți între deck/mână/tablă.
-    // EffectRegistry are nevoie să acceseze tabla pentru efectele StructureCard.
+    // Declarăm aceste clase 'friend' ca să poată accesa variabilele private (board, mana etc).
+    // E ok pentru ca Game si Player sunt extrem de strans legate.
     friend class Game;
     friend class EffectRegistry;
 
 private:
     std::string                            name;
-    std::vector<std::unique_ptr<Card>>     deck;  // Pachetul de cărți ne-trase
-    std::vector<std::unique_ptr<Card>>     hand;  // Cărțile din mâna jucătorului
-    std::vector<std::unique_ptr<Card>>     board; // Cărțile plasate pe tablă
-    unsigned int                           defeatedUnitCards = 0; // Câte unități au murit
-    unsigned int                           mana              = 1; // Mana disponibilă
+    std::vector<std::unique_ptr<Card>>     deck;
+    std::vector<std::unique_ptr<Card>>     hand;
+    std::vector<std::unique_ptr<Card>>     board;
+    unsigned int                           defeatedUnitCards = 0;
+    unsigned int                           mana              = 1;
     bool                                   isMyTurn          = false;
 
 public:
     Player();
     explicit Player(std::string name);
-    // Move constructor și move assignment: permit mutarea unui Player
-    // (necesar pentru că unique_ptr nu poate fi copiat, doar mutat).
+    
+    // Explicitam constructorii de move (unique_ptr nu poate fi copiat, doar mutat).
     Player(Player&&) = default;
     Player& operator=(Player&&) = default;
     ~Player();

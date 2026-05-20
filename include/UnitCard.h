@@ -26,7 +26,6 @@ public:
 private:
     AttackAction onAttackBefore;
     AttackAction onAttackAfter;
-    std::string  attackEffectSummary;
     int          attack;
     int          hp;
     bool         isDead;

@@ -4,46 +4,63 @@
 
 #include <exception>
 #include <string>
-// Clasa de bază pentru toate erorile din jocul nostru.
-// Moștenește din std::exception ca să poată fi prinsă cu catch(const std::exception&).
-class GameException : public std::exception {
+#include <iostream>
+
+// Clasa de baza simpla (non-template). Ne permite sa prindem TOATE erorile jocului
+// intr-un singur loc folosind 'catch (const GameExceptionBase& e)'.
+class GameExceptionBase : public std::exception {
 protected:
-    std::string mesaj; // Mesajul de eroare
+    std::string mesaj;
 
 public:
-    // 'explicit' previne conversii accidentale din string în GameException.
-    explicit GameException(const std::string& msg) : mesaj(msg) {}
+    explicit GameExceptionBase(const std::string& msg) : mesaj(msg) {}
 
-    // Suprascriem what() din std::exception.
-    // 'noexcept' promite că această funcție nu aruncă alte excepții.
-    // .c_str() convertește std::string în char* (formatul cerut de std::exception).
     const char* what() const override {
         return mesaj.c_str();
     }
 };
 
-// 1. Eroare aruncata cand fisierul deck.txt nu poate fi deschis.
-//    Se arunca in: Game.cpp -> makeBaseDeck()
-class DeckLoadException : public GameException {
+// Clasa sablon (template): 'template <typename T>' inseamna ca aceasta clasa
+// poate stoca orice tip de date pentru detalii (T poate fi un text/string sau un numar/unsigned),
+// fara sa fim nevoiti sa scriem o clasa complet noua pentru fiecare tip.
+template <typename T>
+class GameException : public GameExceptionBase {
+protected:
+    T detalii;
+
+public:
+    GameException(const std::string& msg, T det) : GameExceptionBase(msg), detalii(det) {}
+
+    T getDetalii() const { return detalii; }
+
+    // Declararea ca 'friend' (prieten) ii ofera functiei de mai jos permisiunea speciala
+    // de a accesa direct variabila protejata 'detalii'.
+    template <typename U>
+    friend void printExceptionDetails(const GameException<U>& ex);
+};
+
+// Functie sablon (template) libera care afiseaza detaliile tehnice ale oricarei exceptii.
+template <typename T>
+void printExceptionDetails(const GameException<T>& ex) {
+    std::cout << "  [Detalii tehnice]: " << ex.detalii << "\n";
+}
+
+class DeckLoadException : public GameException<std::string> {
 public:
     explicit DeckLoadException(const std::string& fisier)
-        : GameException("Eroare fatala: Nu am putut deschide fisierul " + fisier + "!") {}
+        : GameException<std::string>("Nu am putut deschide fisierul " + fisier, fisier) {}
 };
 
-// 2. Eroare aruncata cand o carte este creata cu statistici invalide (ex: mana > 10).
-//    Se arunca in: Card.cpp -> constructorul Card()
-class InvalidCardStatException : public GameException {
+class InvalidCardStatException : public GameException<unsigned> {
 public:
-    explicit InvalidCardStatException(const std::string& numeCarte)
-        : GameException("Eroare la crearea cartii: '" + numeCarte + "' are statistici invalide (mana > 10)!") {}
+    InvalidCardStatException(const std::string& numeCarte, unsigned manaCost)
+        : GameException<unsigned>("Cartea '" + numeCarte + "' are cost de mana invalid!", manaCost) {}
 };
 
-// 3. Eroare aruncata cand jucatorul incearca sa joace o carte fara suficienta mana.
-//    Se arunca in: Game.cpp -> tryPlayCardFromHand() si tryPlaySpellFromHand()
-class NotEnoughManaException : public GameException {
+class NotEnoughManaException : public GameException<unsigned> {
 public:
-    explicit NotEnoughManaException(const std::string& numeCarte)
-        : GameException("Eroare de joc: Nu ai suficienta mana pentru a juca '" + numeCarte + "'!") {}
+    NotEnoughManaException(const std::string& numeCarte, unsigned costMana)
+        : GameException<unsigned>("Nu ai suficienta mana pentru a juca '" + numeCarte + "'!", costMana) {}
 };
 
 #endif // TRADINGCARDGAME_EXCEPTIONS_H

@@ -8,12 +8,10 @@ StructureCard::StructureCard(const std::string& name, unsigned manaCost, int hp,
     : StructureCard(name, manaCost, hp, nullptr, effectSummary) {
 }
 
-// Constructor complet: inițializează clasa de bază Card, apoi membrii proprii.
 StructureCard::StructureCard(const std::string& name, unsigned manaCost, int hp,
                              TurnChangeEffect effect, const std::string& effectSummary)
-    : Card(name, manaCost),
+    : Card(name, manaCost, effectSummary),
       effect(effect),
-      effectSummary(effectSummary),
       hp(hp),
       isDead(false) {
 }
@@ -23,7 +21,6 @@ StructureCard::StructureCard(const std::string& name, unsigned manaCost, int hp,
 StructureCard::StructureCard(const StructureCard& other)
     : Card(other),
       effect(other.effect),
-      effectSummary(other.effectSummary),
       hp(other.hp),
       isDead(other.isDead) {
 }
@@ -37,7 +34,6 @@ void swap(StructureCard& first, StructureCard& second) {
     using std::swap;
     swap(static_cast<Card&>(first), static_cast<Card&>(second));
     swap(first.effect,        second.effect);
-    swap(first.effectSummary, second.effectSummary);
     swap(first.hp,            second.hp);
     swap(first.isDead,        second.isDead);
 }
@@ -64,12 +60,9 @@ std::unique_ptr<Card> StructureCard::clone() const {
     return std::make_unique<StructureCard>(*this);
 }
 
-// Afișează detaliile specifice StructureCard (HP și descrierea efectului).
 void StructureCard::displayDetails(std::ostream& os) const {
     os << " [Structure] | HP: " << hp;
-    if (!effectSummary.empty()) {
-        os << " | Effect: " << effectSummary;
-    }
+    Card::displayDetails(os);
 }
 
 // Apelată la fiecare schimbare de tur. Execută efectul doar dacă structura e în viață.

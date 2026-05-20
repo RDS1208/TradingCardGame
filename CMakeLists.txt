@@ -13,6 +13,7 @@ add_executable(TradingCardGame
     src/EffectRegistry.cpp
     src/Player.cpp
     src/Game.cpp
+    src/CardFactory.cpp
 )
 
 # Makes #include "Card.h" work from any .cpp file without needing path prefixes.

@@ -8,14 +8,11 @@
 #include <limits>
 #include <string>
 
-// Curăță starea eronată a cin și aruncă orice caracter rămas în buffer.
 inline void clearInput() {
     std::cin.clear();
-    // numeric_limits<streamsize>::max() înseamnă "ignoră oricâte caractere până la newline".
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 }
 
-// Afișează un prompt și citește un întreg, repetând dacă input-ul este invalid.
 inline int readInt(const std::string& prompt) {
     int value = 0;
     while (true) {
@@ -28,7 +25,6 @@ inline int readInt(const std::string& prompt) {
         clearInput();
     }
 }
-
 
 inline void showTurnMenu(const Game& game) {
     std::cout << "----------------------------------------\n";
@@ -50,14 +46,11 @@ inline void handlePlayCard(Game& game) {
         return;
     }
 
-    // Verificam daca cartea selectata este o vraja (SpellCard).
-    // Vrăjile au nevoie de o tinta, deci cerem input suplimentar.
     if (game.isSpellCard(index)) {
         game.displayBoards(std::cout);
         const int targetIndex = readInt("Target index on board (-1 for no target): ");
         if (targetIndex < 0) {
             const bool played = game.tryPlaySpellFromHand(index, -1, false);
-            // Operatorul ternar: dacă played e true, afișăm primul șir, altfel al doilea.
             std::cout << (played ? "Spell cast (no target).\n" : "Cannot cast that spell.\n");
         } else {
             const int isEnemy = readInt("Is target enemy? (1 = yes, 0 = no): ");
@@ -65,9 +58,7 @@ inline void handlePlayCard(Game& game) {
             std::cout << (played ? "Spell cast on target.\n" : "Cannot cast that spell.\n");
         }
     } else {
-        // Nu e vraja: o jucam direct pe tabla (Unit sau Structure).
-        // static_cast<std::size_t> convertește int la unsigned pentru a evita un warning.
-        const bool played = game.tryPlayCardFromHand(static_cast<std::size_t>(index));
+        const bool played = game.tryPlayCardFromHand(index);
         std::cout << (played ? "Card played.\n" : "Cannot play that card.\n");
     }
 }
@@ -87,8 +78,7 @@ inline void handleAttack(Game& game) {
         return;
     }
 
-    const bool attacked = game.tryAttack(static_cast<std::size_t>(attackerIndex),
-                                         static_cast<std::size_t>(targetIndex));
+    const bool attacked = game.tryAttack(attackerIndex, targetIndex);
     std::cout << (attacked ? "Attack resolved.\n" : "Attack is not valid.\n");
 }
 

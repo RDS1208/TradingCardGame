@@ -20,7 +20,6 @@ public:
 
 private:
     TurnChangeEffect effect;        // Efectul care se declanșează la fiecare tur
-    std::string      effectSummary; // Descrierea efectului (afișată în consolă)
     int              hp;            // Viața structurii
     bool             isDead;        // true dacă structura a fost distrusă
 

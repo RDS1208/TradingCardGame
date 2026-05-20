@@ -6,17 +6,15 @@
 
 int Card::nextId = 0;
 
-Card::Card(std::string name, unsigned manaCost)
-    // std::move transferă proprietatea șirului în loc să-l copieze — mai eficient.
-    : id(nextId++), name(std::move(name)), manaCost(manaCost) {
+Card::Card(std::string name, unsigned manaCost, std::string effectSummary)
+    : id(nextId++), name(std::move(name)), manaCost(manaCost), effectSummary(std::move(effectSummary)) {
     if (this->manaCost > 10) {
-        throw InvalidCardStatException(this->name);
+        throw InvalidCardStatException(this->name, this->manaCost);
     }
 }
 
 Card::Card(const Card& other)
-    // O carte copiată primește un ID nou și unic, nu un duplicat al celui original.
-    : id(nextId++), name(other.name), manaCost(other.manaCost) {
+    : id(nextId++), name(other.name), manaCost(other.manaCost), effectSummary(other.effectSummary) {
 }
 
 void swap(Card& first, Card& second) {
@@ -24,22 +22,21 @@ void swap(Card& first, Card& second) {
     swap(first.id,       second.id);
     swap(first.name,     second.name);
     swap(first.manaCost, second.manaCost);
+    swap(first.effectSummary, second.effectSummary);
 }
 
 Card& Card::operator=(const Card& other) {
-    // Protecție împotriva auto-atribuirii: "card = card" nu trebuie să facă nimic.
     if (this != &other) {
         id       = other.id;
         name     = other.name;
         manaCost = other.manaCost;
+        effectSummary = other.effectSummary;
     }
     return *this;
 }
 
 void Card::play() {
     std::cout << "[ID:" << id << "] Card played to field.\n";
-    // Apel polimorfic: C++ determină la rulare tipul real și apelează
-    // implementarea corectă (UnitCard::onPlayEffect sau SpellCard::onPlayEffect).
     onPlayEffect();
 }
 
@@ -49,7 +46,8 @@ void Card::display(std::ostream& os) const {
     os << '\n';
 }
 
-void Card::displayDetails(std::ostream&) const {
-    // Versiunea de bază nu face nimic intenționat.
-    // Clasele derivate suprascriu aceasta pentru a afișa propriile informații.
+void Card::displayDetails(std::ostream& os) const {
+    if (!effectSummary.empty()) {
+        os << " | Effect: " << effectSummary;
+    }
 }

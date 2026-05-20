@@ -7,25 +7,25 @@
 int main() {
 
     try {
-        std::string plaerOneName;
-        std::string plaerTwoName;
+        // Citim numele jucatorilor de la tastatura
+        std::string playerOneName;
+        std::string playerTwoName;
 
         std::cout << "Enter player one name: ";
-        std::getline(std::cin, plaerOneName);
+        std::getline(std::cin, playerOneName);
         std::cout << "Enter player two name: ";
-        std::getline(std::cin, plaerTwoName);
+        std::getline(std::cin, playerTwoName);
 
-        Game game(plaerOneName, plaerTwoName);
+        // Initializam motorul de joc si pornim meciul
+        Game game(playerOneName, playerTwoName);
         game.startGame();
 
-        std::cout << "Match started between " << plaerOneName << " and " << plaerTwoName << ".\n";
+        std::cout << "Match started between " << playerOneName << " and " << playerTwoName << ".\n";
         std::cout << "Each turn: you can play, inspect hand/boards, attack, or end turn.\n\n";
 
-        // Bucla principală a jocului: se repetă până când un jucător pierde.
         while (!game.isGameOver()) {
             bool endTurn = false;
 
-            // Bucla turn-ului: jucătorul alege acțiuni până decide să termine turul.
             while (!endTurn && !game.isGameOver()) {
                 showTurnMenu(game);
 
@@ -55,8 +55,12 @@ int main() {
                             std::cout << "Unknown option.\n";
                             break;
                     }
-                } catch (const GameException& ex) {
-                    // Prindem DOAR erorile noastre de joc (GameException și derivatele).
+                } catch (const GameException<unsigned>& ex) {
+                    // Prindem exceptiile care contin un numar (de exemplu: "nu ai destula mana")
+                    std::cout << "\n[!] " << ex.what() << "\n";
+                    printExceptionDetails(ex);
+                } catch (const GameExceptionBase& ex) {
+                    // Prindem restul exceptiilor specifice jocului nostru
                     std::cout << "\n[!] " << ex.what() << "\n\n";
                 }
             }
@@ -69,8 +73,6 @@ int main() {
         std::cout << "Game over! Un jucator a distrus 6 carti adverse.\n";
 
     } catch (const std::exception& ex) {
-        // Prinde ORICE eroare standard (inclusiv GameException, fiindcă moștenește din std::exception).
-        // Ajung aici doar erorile care n-au fost prinse de stratul interior.
         std::cerr << "Fatal error: " << ex.what() << "\n";
         return 1;
     }

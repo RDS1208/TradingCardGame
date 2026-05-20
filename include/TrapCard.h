@@ -19,7 +19,6 @@ public:
 
 private:
     TrapEffect  effect;        // Lambda-ul care se execută la declanșare
-    std::string effectSummary; // Descrierea efectului (afișată în consolă)
     bool        isTriggered;   // true după ce capcana s-a declanșat
 
 public:
