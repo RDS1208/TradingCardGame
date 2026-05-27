@@ -149,3 +149,35 @@ Trap|Spike Trap|1|DamageAttacker|Deals 2 damage to the attacker.
 Hearthstone
 Magic the Gathering
 Yu-Gi-Oh!
+
+
+
+````
+
+Rezumatul Proiectului
+Proiectul consta in proiectarea si implementarea a unui joc de tip Trading Card Game (TCG) in C++20. Arhitectura este complet polimorfica si modulara, fiind structurata in jurul unei colectii dinamice de carti gestionate prin pointeri inteligenti. Jocul simuleaza interactiunea dintre doi jucatori care isi gestioneaza pachetele de carti, mana disponibila, mana curenta si zona de lupta (tabla). Logica include parsarea pachetelor dintr-un fisier extern (deck.txt), instantierea dinamica a cartilor, gestionarea fazelor de joc (faza de jucare a cartilor pe masa, faza de vraji, lupta efectiva si curatarea mesei).
+1.Ierarhia POO si Mecanismele Polimorfice
+Pilonul central al codului meu este clasa abstracta Card, care defineste interfata comuna si regulile pe care toate tipurile de carti trebuie sa le respecte. Am blocat instantierea directa a acestei clase prin declararea unor functii virtuale pure. Din aceasta clasa de baza am derivat cele 4 tipuri specifice de carti, fiecare avand un comportament distinct pe tabla: UnitCard (entitati cu atac si HP), SpellCard (efecte instantanee), StructureCard (efecte pasive turn-by-turn) si TrapCard (carti care declanseaza un efect in momentul in care inamicul ataca).
+Pentru a preveni scurgerile de memorie (memory leaks) la distrugerea obiectelor, am definit explicit un destructor virtual in clasa de baza:
+Fara acest detaliu, in momentul in care as fi sters un element din vectorul de tip Card* care puncta in realitate catre un UnitCard, compilatorul ar fi apelat doar destructorul parintelui. Acest lucru ar fi lasat date nesterse in memorie si ar fi blocat logica specifica claselor derivate (cum ar fi decrementarea contoarelor statice pentru unitatile active).
+Pentru apelul efectelor, am ales sa folosesc designul NVI (Non-Virtual Interface). Functia publica play() este non-virtuala si ofera un comportament standard invariant (cum ar fi logarea ID-ului cartii), apeland in interiorul ei metoda protejata/privata onPlayEffect(). Acest lucru imi garanteaza ca procesul de baza al plasarii unei carti ramane neschimbat, dar comportamentul final este dictat pur polimorfic de tipul cartii.
+2.Managementul Modern al Memoriei si Semantica de Mutare
+Pentru a elimina complet managementul manual al memoriei prin new si delete, care predispune codul la pointeri suspendati (dangling pointers) sau eliberari duble, am structurat containerele de joc (mana si tabla) folosind pointeri de tip unique_ptr.
+Deoarece un std::unique_ptr nu permite copierea (constructorul de copiere fiind sters), transferul unei carti dintr-un container in altul de exemplu, in momentul in care jucatorul plaseaza o carte din mana pe tabla este implementat exclusiv prin std::move:
+In cazul relatiilor in care nu am nevoie de proprietate asupra obiectului cum ar fi un SpellCard care trebuie doar sa aplice un efect temporar asupra unei unitati de pe tabla am folosit pointeri bruti simpli (Card*). Adresa este extrasa temporar prin metoda .get(), indicand clar ca viata obiectului tinta nu depinde de vraja care il acceseaza.
+3.Logica Jocului si Siguranta Tipului la Rulare (RTTI)
+In implementarea metodelor de interactiune din src/Game.cpp, am prioritizat lizibilitatea. Pentru a evita scrierea unor sintaxe greoaie cu smart pointers in mijlocul verificarilor de mana si costuri, extrag temporar un pointer brut (Card* card = player.hand[index].get();) pentru validari inainte de a muta efectiv resursa.
+Pentru faza de curatare a tablei (cleanupBoard), am evitat algoritmi complexi care ar fi amestecat ordinea cartilor si am implementat o abordare liniara directa: parcurg tabla curenta, filtrez obiectele valide (unitati sau structuri cu HP>0 si capcane nedeclansate) intr-un vector nou de supravietuitori, iar la final inlocuiesc vechiul container.
+Deoarece containerele stocheaza tipul generic std::unique_ptr, in momentele in care logica de combat necesita accesarea unor atribute specifice claselor derivate (cum ar fi atacul unei unitati), folosesc mecanismul RTTI prin operatorul dynamic_cast:
+Daca pointerul generic indica o carte care nu este o unitate (de exemplu, o capcana), cast-ul returneaza in siguranta nullptr. Verificarea acestui rezultat imi permite sa procesez lupta fara a risca erori de accesare a memoriei la rulare.
+4.Gestiunea Generica a erorilor prin Sabloane
+Sistemul de exceptii pe care l-am proiectat este complet izolat de ierarhia cartilor, respectand arhitectura de tip Separation of Concerns. Pentru a acoperi cerintele de programare generica, am transformat clasa de exceptii intr-un sablon (template):
+Parametrul generic T imi permite sa refolosesc aceeasi clasa de exceptie pentru contexte total diferite: pot stoca un std::string pentru a retina numele fisierului in cazul unei erori de citire a pachetului sau un tip numeric unsigned pentru a transmite valoarea exacta a manei lipsa in timpul unui turn.
+Pentru a pastra datele incapsulate, am declarat o functie prieten (friend function) in interiorul clasei template, oferindu-i acesteia dreptul de a accesa membrul privat ce contine detaliile erorii strict pentru formatarea mesajului in consola, fara a expune metode de tip getter inutile.
+4.Integrarea sabloanelor de proiectare (Design Patterns)
+Pentru a asigura modularitatea si extensibilitatea jocului, am integrat trei sabloane de proiectare fundamentale:
+•	Singleton (EffectRegistry): Am garantat existenta unei singure instante a registrului de efecte in memorie prin blocarea constructorilor, stergerea operatorilor de copiere (= delete) si expunerea unei metode statice getInstance() care returneaza o referinta la o instanta statica locala.
+•	Simple Factory (CardFactory): Am izolat complet logica de instantiere a obiectelor. Metoda sa statica parseaza liniile de text din deck.txt, identifica cuvintele cheie (Unit, Spell etc.) si returneaza tipul corect de carte incapsulat direct intr-un pointer inteligent. Restul jocului nu stie cum se construiesc cartile, ci doar le foloseste interfata.
+•	Strategy: In loc sa creez sute de subclase pentru fiecare efect in parte am utilizat std::function si expresii lambda transmise la constructie. Astfel, doua instante diferite ale clasei SpellCard pot executa strategii complet diferite (una ataca, una vindeca) la apelul aceleiasi metode polimorfice, comportamentul fiind injectat dinamic.
+
+
