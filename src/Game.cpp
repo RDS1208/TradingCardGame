@@ -201,7 +201,8 @@ bool Game::tryPlayCardFromHand(int index) {
     Player& player = currentPlayer();
     if (index < 0 || index >= (int)player.hand.size()) return false;
 
-    Card* card = player.hand[index].get();
+    // Verificam costul de mana
+    std::unique_ptr<Card>& card = player.hand[index];
     if (!card) return false;
 
     // Verificăm costul de mană
@@ -224,14 +225,14 @@ bool Game::tryPlaySpellFromHand(int handIndex, int targetIndex, bool isEnemy) {
     Player& player = currentPlayer();
     if (handIndex < 0 || handIndex >= (int)player.hand.size()) return false;
 
-    Card* card = player.hand[handIndex].get();
+    std::unique_ptr<Card>& card = player.hand[handIndex];
     if (!card) return false;
 
     if (card->getManaCost() > player.mana) {
         throw NotEnoughManaException(card->getName(), card->getManaCost());
     }
 
-    auto* spell = dynamic_cast<SpellCard*>(card);
+    auto* spell = dynamic_cast<SpellCard*>(card.get());
     if (!spell) return false;
 
     // Identificăm ținta vrăjii, dacă există
