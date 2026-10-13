@@ -7,16 +7,14 @@
 int main() {
 
     try {
-        // Citim numele jucatorilor de la tastatura
         std::string playerOneName;
         std::string playerTwoName;
 
         std::cout << "Enter player one name: ";
-        std::getline(std::cin, playerOneName);
+        if (!std::getline(std::cin, playerOneName)) throw InputEndedException();
         std::cout << "Enter player two name: ";
-        std::getline(std::cin, playerTwoName);
+        if (!std::getline(std::cin, playerTwoName)) throw InputEndedException();
 
-        // Initializam motorul de joc si pornim meciul
         Game game(playerOneName, playerTwoName);
         game.startGame();
 
@@ -56,11 +54,11 @@ int main() {
                             break;
                     }
                 } catch (const GameException<unsigned>& ex) {
-                    // Prindem exceptiile care contin un numar (de exemplu: "nu ai destula mana")
+                    // Handles errors with numeric details, such as insufficient mana.
                     std::cout << "\n[!] " << ex.what() << "\n";
                     printExceptionDetails(ex);
                 } catch (const GameExceptionBase& ex) {
-                    // Prindem restul exceptiilor specifice jocului nostru
+                    // Handles other game errors.
                     std::cout << "\n[!] " << ex.what() << "\n\n";
                 }
             }
@@ -70,8 +68,11 @@ int main() {
             }
         }
 
-        std::cout << "Game over! Un jucator a distrus 6 carti adverse.\n";
+        std::cout << "Game over! A player has lost six units.\n";
 
+    } catch (const InputEndedException&) {
+        std::cout << "\nInput ended. Exiting game...\n";
+        return 0;
     } catch (const std::exception& ex) {
         std::cerr << "Fatal error: " << ex.what() << "\n";
         return 1;

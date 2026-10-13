@@ -7,13 +7,12 @@
 
 class SpellCard : public Card {
 public:
-    // SpellEffect este un alias pentru un tip de funcție care primește un Card*
-    // (ținta) și execută un efect (daune, vindecare etc.).
+    // Spell callbacks receive a non-owning target pointer.
     using SpellEffect = std::function<void(Card*)>;
 
 private:
     SpellEffect  effect;
-    Card*        currentTarget; // Pointer brut: vrăjile nu dețin ținta, doar o referențiază temporar.
+    Card*        currentTarget;
 
 public:
     SpellCard(const std::string& name, unsigned manaCost,
@@ -25,7 +24,6 @@ public:
     SpellCard& operator=(SpellCard other);
     friend void swap(SpellCard& first, SpellCard& second);
 
-    // Apelat de Game chiar înainte de play() pentru a seta ținta aleasă de jucător.
     void setTarget(Card* target) { currentTarget = target; }
 
     void onPlayEffect() override;

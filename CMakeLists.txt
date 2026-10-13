@@ -1,10 +1,11 @@
-cmake_minimum_required(VERSION 4.2)
-project(TradingCardGame)
+cmake_minimum_required(VERSION 3.20)
+project(TradingCardGame LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_executable(TradingCardGame
-    src/main.cpp
+set(GAME_SOURCES
     src/Card.cpp
     src/UnitCard.cpp
     src/SpellCard.cpp
@@ -16,15 +17,24 @@ add_executable(TradingCardGame
     src/CardFactory.cpp
 )
 
-# Makes #include "Card.h" work from any .cpp file without needing path prefixes.
-target_include_directories(TradingCardGame PRIVATE include)
+add_library(TradingCardGameCore ${GAME_SOURCES})
+target_include_directories(TradingCardGameCore PUBLIC include)
 
-# Pune .exe-ul direct în folderul principal al proiectului (nu în build/Release/).
-set_target_properties(TradingCardGame PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY         ${CMAKE_SOURCE_DIR}
-    RUNTIME_OUTPUT_DIRECTORY_DEBUG   ${CMAKE_SOURCE_DIR}
-    RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_SOURCE_DIR}
+add_executable(TradingCardGame src/main.cpp)
+target_link_libraries(TradingCardGame PRIVATE TradingCardGameCore)
+
+enable_testing()
+add_executable(TradingCardGameTests tests/TradingCardGameTests.cpp)
+target_link_libraries(TradingCardGameTests PRIVATE TradingCardGameCore)
+add_test(NAME TradingCardGameTests COMMAND TradingCardGameTests)
+set_tests_properties(TradingCardGameTests PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
+
+add_executable(EdgeCaseTests tests/EdgeCaseTests.cpp)
+target_link_libraries(EdgeCaseTests PRIVATE TradingCardGameCore)
+add_test(NAME EdgeCaseTests COMMAND EdgeCaseTests)
+set_tests_properties(TradingCardGameTests EdgeCaseTests PROPERTIES TIMEOUT 5)
 
 # Copy deck.txt next to the executable after each build so the game finds it at runtime.
 add_custom_command(TARGET TradingCardGame POST_BUILD
@@ -32,3 +42,4 @@ add_custom_command(TARGET TradingCardGame POST_BUILD
         ${CMAKE_SOURCE_DIR}/data/deck.txt
         $<TARGET_FILE_DIR:TradingCardGame>/deck.txt
 )
+

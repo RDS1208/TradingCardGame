@@ -32,12 +32,11 @@ SpellCard& SpellCard::operator=(SpellCard other) {
 void SpellCard::onPlayEffect() {
     std::cout << getName() << " is cast!\n";
     if (effect) {
-        effect(currentTarget); // Apelează lambda-ul stocat cu ținta selectată.
+        effect(currentTarget);
     }
 }
 
 void SpellCard::onDeath() {
-    // Vrăjile sunt aruncate după ce sunt jucate; nu au o stare de "moarte".
 }
 
 std::unique_ptr<Card> SpellCard::clone() const {

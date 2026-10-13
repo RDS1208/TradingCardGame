@@ -6,9 +6,6 @@
 #include <ostream>
 #include <utility>
 
-// Cuvantul cheie 'static' in fata unei functii dintr-un fisier .cpp
-// inseamna ca aceasta functie poate fi apelata DOAR in interiorul acestui fisier.
-// Este un mod excelent de a evita conflictele de nume cu alte fisiere.
 static void displayCardList(const std::vector<std::unique_ptr<Card>>& cards,
                             const char* title,
                             std::ostream& os) {
@@ -17,11 +14,10 @@ static void displayCardList(const std::vector<std::unique_ptr<Card>>& cards,
         os << "  (empty)\n";
         return;
     }
-    int size = (int)cards.size();
-    for (int i = 0; i < size; ++i) {
-        os << "  [" << i << "] ";
-        if (cards[i]) {
-            cards[i]->display(os);
+    for (std::size_t index = 0; index < cards.size(); ++index) {
+        os << "  [" << index << "] ";
+        if (cards[index]) {
+            cards[index]->display(os);
         } else {
             os << "(null)\n";
         }

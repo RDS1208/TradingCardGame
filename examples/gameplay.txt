@@ -1,0 +1,188 @@
+Recorded console session with the bundled deck.
+The input lines appear before some prompts because they were sent in batches.
+
+Enter player one name: Alice
+Bob
+2
+Enter player two name: Match started between Alice and Bob.
+Each turn: you can play, inspect hand/boards, attack, or end turn.
+
+----------------------------------------
+Current player: Alice
+Remaining mana: 1
+1) Play card from hand
+2) See hand
+3) See both boards
+4) Attack
+5) End turn
+6) Exit Game
+Choose action: Alice
+Hand:
+  [0] [ID:35] Captain | Mana Cost: 4 | ATK: 4 | HP: 4 | Effect: Battle command
+  [1] [ID:33] Mage Apprentice | Mana Cost: 3 | ATK: 3 | HP: 1 | Effect: Arcane burst
+  [2] [ID:38] Heal | Mana Cost: 1 [Spell] | Effect: Restore 3 HP to any unit.
+  [3] [ID:32] Knight | Mana Cost: 4 | ATK: 4 | HP: 5 | Effect: Heavy charge
+----------------------------------------
+Current player: Alice
+Remaining mana: 1
+1) Play card from hand
+2) See hand
+3) See both boards
+4) Attack
+5) End turn
+6) Exit Game
+Choose action: 5
+5
+5
+5
+1
+1
+5
+2
+----------------------------------------
+Current player: Bob
+Remaining mana: 2
+1) Play card from hand
+2) See hand
+3) See both boards
+4) Attack
+5) End turn
+6) Exit Game
+Choose action: ----------------------------------------
+Current player: Alice
+Remaining mana: 2
+1) Play card from hand
+2) See hand
+3) See both boards
+4) Attack
+5) End turn
+6) Exit Game
+Choose action: ----------------------------------------
+Current player: Bob
+Remaining mana: 3
+1) Play card from hand
+2) See hand
+3) See both boards
+4) Attack
+5) End turn
+6) Exit Game
+Choose action: ----------------------------------------
+Current player: Alice
+Remaining mana: 3
+1) Play card from hand
+2) See hand
+3) See both boards
+4) Attack
+5) End turn
+6) Exit Game
+Choose action: Alice
+Hand:
+  [0] [ID:35] Captain | Mana Cost: 4 | ATK: 4 | HP: 4 | Effect: Battle command
+  [1] [ID:33] Mage Apprentice | Mana Cost: 3 | ATK: 3 | HP: 1 | Effect: Arcane burst
+  [2] [ID:38] Heal | Mana Cost: 1 [Spell] | Effect: Restore 3 HP to any unit.
+  [3] [ID:32] Knight | Mana Cost: 4 | ATK: 4 | HP: 5 | Effect: Heavy charge
+  [4] [ID:36] Paladin | Mana Cost: 5 | ATK: 5 | HP: 6 | Effect: Holy strike
+  [5] [ID:31] Archer | Mana Cost: 3 | ATK: 3 | HP: 2 | Effect: Ranged pressure
+Card index from hand (-1 to cancel): [ID:33] Card played to field.
+Mage Apprentice has entered the board
+Card played.
+----------------------------------------
+Current player: Alice
+Remaining mana: 0
+1) Play card from hand
+2) See hand
+3) See both boards
+4) Attack
+5) End turn
+6) Exit Game
+Choose action: ----------------------------------------
+Current player: Bob
+Remaining mana: 4
+1) Play card from hand
+2) See hand
+3) See both boards
+4) Attack
+5) End turn
+6) Exit Game
+Choose action: Bob
+Hand:
+  [0] [ID:50] Paladin | Mana Cost: 5 | ATK: 5 | HP: 6 | Effect: Holy strike
+  [1] [ID:42] Squire | Mana Cost: 1 | ATK: 1 | HP: 2 | Effect: Basic strike
+  [2] [ID:45] Archer | Mana Cost: 3 | ATK: 3 | HP: 2 | Effect: Ranged pressure
+  [3] [ID:48] Berserker | Mana Cost: 5 | ATK: 5 | HP: 4 | Effect: Aggressive swing
+  [4] [ID:46] Knight | Mana Cost: 4 | ATK: 4 | HP: 5 | Effect: Heavy charge
+  [5] [ID:51] Fireball | Mana Cost: 2 [Spell] | Effect: Deal 3 damage to any unit.
+  [6] [ID:53] Vampire | Mana Cost: 3 | ATK: 2 | HP: 4 | Effect: Heals 1 HP on attack.
+----------------------------------------
+Current player: Bob
+Remaining mana: 4
+1) Play card from hand
+2) See hand
+3) See both boards
+4) Attack
+5) End turn
+6) Exit Game
+Choose action: 1
+6
+4
+0
+0
+3
+6
+Bob
+Hand:
+  [0] [ID:50] Paladin | Mana Cost: 5 | ATK: 5 | HP: 6 | Effect: Holy strike
+  [1] [ID:42] Squire | Mana Cost: 1 | ATK: 1 | HP: 2 | Effect: Basic strike
+  [2] [ID:45] Archer | Mana Cost: 3 | ATK: 3 | HP: 2 | Effect: Ranged pressure
+  [3] [ID:48] Berserker | Mana Cost: 5 | ATK: 5 | HP: 4 | Effect: Aggressive swing
+  [4] [ID:46] Knight | Mana Cost: 4 | ATK: 4 | HP: 5 | Effect: Heavy charge
+  [5] [ID:51] Fireball | Mana Cost: 2 [Spell] | Effect: Deal 3 damage to any unit.
+  [6] [ID:53] Vampire | Mana Cost: 3 | ATK: 2 | HP: 4 | Effect: Heals 1 HP on attack.
+Card index from hand (-1 to cancel): [ID:53] Card played to field.
+Vampire has entered the board
+Card played.
+----------------------------------------
+Current player: Bob
+Remaining mana: 1
+1) Play card from hand
+2) See hand
+3) See both boards
+4) Attack
+5) End turn
+6) Exit Game
+Choose action: Bob board:
+Board:
+  [0] [ID:53] Vampire | Mana Cost: 3 | ATK: 2 | HP: 4 | Effect: Heals 1 HP on attack.
+Alice board:
+Board:
+  [0] [ID:33] Mage Apprentice | Mana Cost: 3 | ATK: 3 | HP: 1 | Effect: Arcane burst
+Your attacker index (-1 to cancel): Opponent target index (-1 to cancel): Mage Apprentice has been destroyed and disappeared from the board
+Vampire attacks Mage Apprentice for 2 damage and takes 3 damage!
+Vampire healed 1 HP from Vampiric Strike!
+Attack resolved.
+----------------------------------------
+Current player: Bob
+Remaining mana: 1
+1) Play card from hand
+2) See hand
+3) See both boards
+4) Attack
+5) End turn
+6) Exit Game
+Choose action: Bob board:
+Board:
+  [0] [ID:53] Vampire | Mana Cost: 3 | ATK: 2 | HP: 2 [exhausted] | Effect: Heals 1 HP on attack.
+Alice board:
+Board:
+  (empty)
+----------------------------------------
+Current player: Bob
+Remaining mana: 1
+1) Play card from hand
+2) See hand
+3) See both boards
+4) Attack
+5) End turn
+6) Exit Game
+Choose action: Exiting game...
+

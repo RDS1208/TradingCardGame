@@ -9,6 +9,7 @@
 #include "Exceptions.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cstddef>
 #include <fstream>
 #include <iostream>
@@ -16,12 +17,7 @@
 #include <random>
 #include <utility>
 
-static std::mt19937& randomEngine() {
-    static std::mt19937 engine{std::random_device{}()};
-    return engine;
-}
-
-static bool isDefeatedCard(const std::unique_ptr<Card>& card) {
+static bool shouldRemoveCardFromBoard(const std::unique_ptr<Card>& card) {
     if (const auto* unit = dynamic_cast<const UnitCard*>(card.get())) {
         return !unit->isAlive();
     }
@@ -34,32 +30,52 @@ static bool isDefeatedCard(const std::unique_ptr<Card>& card) {
     return false;
 }
 
-static std::vector<std::unique_ptr<Card>> makeBaseDeck(const std::string& filename = "deck.txt") {
+static bool isValidIndex(int index, std::size_t size) {
+    return index >= 0 && static_cast<std::size_t>(index) < size;
+}
+
+static std::vector<std::unique_ptr<Card>> makeBaseDeck() {
     std::vector<std::unique_ptr<Card>> deck;
+    std::string filename = "data/deck.txt";
     std::ifstream file(filename);
 
     if (!file.is_open()) {
-        throw DeckLoadException(filename);
+        file.clear();
+        filename = "deck.txt";
+        file.open(filename);
+    }
+    if (!file.is_open()) {
+        throw DeckLoadException("data/deck.txt or deck.txt");
     }
 
     std::string line;
+    std::size_t lineNumber = 0;
     while (std::getline(file, line)) {
-        if (line.empty() || line[0] == '#') {
+        ++lineNumber;
+        const auto firstContent = std::find_if_not(line.begin(), line.end(), [](unsigned char character) {
+            return std::isspace(character);
+        });
+        if (firstContent == line.end() || *firstContent == '#') {
             continue;
         }
 
-        std::unique_ptr<Card> card = CardFactory::createCard(line);
-        if (card) {
-            deck.push_back(std::move(card));
+        try {
+            deck.push_back(CardFactory::createCard(line));
+        } catch (const GameExceptionBase& error) {
+            throw DeckLoadException(filename, lineNumber, error.what());
         }
     }
 
+    if (deck.empty()) {
+        throw DeckLoadException(filename, "deck contains no cards");
+    }
     return deck;
 }
 
 
-Game::Game(const std::string& playerOneName, const std::string& playerTwoName)
-    : playerOne(playerOneName), playerTwo(playerTwoName) {
+Game::Game(const std::string& playerOneName, const std::string& playerTwoName,
+           unsigned int randomSeed)
+    : playerOne(playerOneName), playerTwo(playerTwoName), randomEngine(randomSeed) {
     resetPlayers();
 }
 
@@ -95,17 +111,15 @@ void Game::resetPlayers() {
     playerOne.isMyTurn          = true;
     playerTwo.isMyTurn          = false;
 
-    turnCounter = 1;
     gameOver    = false;
 }
 
 void Game::shuffleDeck(Player& player) {
-    std::shuffle(player.deck.begin(), player.deck.end(), randomEngine());
+    std::shuffle(player.deck.begin(), player.deck.end(), randomEngine);
 }
 
 void Game::drawCards(Player& player, int count) {
     while (count > 0 && !player.deck.empty()) {
-        // Mutăm ultima carte din pachet în mână (std::move evită copierea).
         player.hand.push_back(std::move(player.deck.back()));
         player.deck.pop_back();
         --count;
@@ -119,31 +133,19 @@ void Game::dealStartingHands() {
     drawCards(playerTwo, startingHandSize);
 }
 
-unsigned int Game::cleanupBoard(Player& player) {
-    std::vector<std::unique_ptr<Card>> survivors;
-    unsigned int removed = 0;
+void Game::cleanupBoard(Player& player) {
+    const auto defeatedUnits = std::count_if(
+        player.board.begin(), player.board.end(), [](const auto& card) {
+            const auto* unit = dynamic_cast<const UnitCard*>(card.get());
+            return unit && !unit->isAlive();
+        });
 
-    // Trecem prin toate cartile de pe tabla.
-    // Daca o carte este infranta (distrusa/activata), o numaram ca fiind eliminata.
-    // Daca este inca activa, o salvam in lista de supravietuitori.
-    for (auto& card : player.board) {
-        if (isDefeatedCard(card)) {
-            ++removed;
-        } else {
-            survivors.push_back(std::move(card));
-        }
-    }
-
-    // Inlocuim tabla veche cu noua lista de carti supravietuitoare.
-    player.board = std::move(survivors);
-
-    player.defeatedUnitCards += removed;
-    // Plafonam numarul total de carti infrante pentru a nu depasi limita jocului.
+    std::erase_if(player.board, shouldRemoveCardFromBoard);
+    player.defeatedUnitCards += static_cast<unsigned int>(defeatedUnits);
     if (player.defeatedUnitCards > defeatLimit) {
         player.defeatedUnitCards = defeatLimit;
     }
 
-    return removed;
 }
 
 void Game::cleanupDefeatedCards() {
@@ -164,8 +166,6 @@ void Game::startGame() {
 void Game::changeTurn() {
     if (gameOver) return;
 
-    ++turnCounter;
-    // Comutăm turul: operatorul ! inversează valoarea bool-ului.
     playerOne.isMyTurn = !playerOne.isMyTurn;
     playerTwo.isMyTurn = !playerTwo.isMyTurn;
 
@@ -175,10 +175,7 @@ void Game::changeTurn() {
         ++player.mana;
     }
 
-    // Resetăm starea de atac a tuturor unităților de pe tablă pentru noul tur.
-    // Și declanșăm efectele de turn pentru StructureCards.
     for (auto& card : player.board) {
-        // .get() extrage pointerul brut din unique_ptr pentru dynamic_cast.
         if (auto* unit = dynamic_cast<UnitCard*>(card.get())) {
             unit->resetAttackStatus();
         }
@@ -186,26 +183,25 @@ void Game::changeTurn() {
             structure->onTurnChange(*this);
         }
     }
+
+    cleanupDefeatedCards();
+    updateGameOverState();
 }
 
 bool Game::isSpellCard(int index) const {
-    const Player& player = currentPlayer();
-    if (index < 0 || index >= (int)player.hand.size()) return false;
-    // dynamic_cast returnează nullptr dacă nu este SpellCard → bool false.
-    return dynamic_cast<SpellCard*>(player.hand[index].get()) != nullptr;
+    return dynamic_cast<const SpellCard*>(handCard(index)) != nullptr;
 }
 
 bool Game::tryPlayCardFromHand(int index) {
     if (gameOver) return false;
 
     Player& player = currentPlayer();
-    if (index < 0 || index >= (int)player.hand.size()) return false;
+    if (!isValidIndex(index, player.hand.size())) return false;
 
-    // Verificam costul de mana
     std::unique_ptr<Card>& card = player.hand[index];
     if (!card) return false;
+    if (dynamic_cast<SpellCard*>(card.get())) return false;
 
-    // Verificăm costul de mană
     if (card->getManaCost() > player.mana) {
         throw NotEnoughManaException(card->getName(), card->getManaCost());
     }
@@ -213,7 +209,6 @@ bool Game::tryPlayCardFromHand(int index) {
     player.mana -= card->getManaCost();
     card->play();
 
-    // Mutăm cartea din mână direct pe tablă.
     player.board.push_back(std::move(player.hand[index]));
     player.hand.erase(player.hand.begin() + index);
     return true;
@@ -223,32 +218,32 @@ bool Game::tryPlaySpellFromHand(int handIndex, int targetIndex, bool isEnemy) {
     if (gameOver) return false;
 
     Player& player = currentPlayer();
-    if (handIndex < 0 || handIndex >= (int)player.hand.size()) return false;
+    if (!isValidIndex(handIndex, player.hand.size())) return false;
 
     std::unique_ptr<Card>& card = player.hand[handIndex];
     if (!card) return false;
 
-    if (card->getManaCost() > player.mana) {
-        throw NotEnoughManaException(card->getName(), card->getManaCost());
-    }
-
     auto* spell = dynamic_cast<SpellCard*>(card.get());
     if (!spell) return false;
 
-    // Identificăm ținta vrăjii, dacă există
     Card* target = nullptr;
     if (targetIndex >= 0) {
         Player& targetPlayer = isEnemy ? opposingPlayer() : currentPlayer();
-        if (targetIndex < (int)targetPlayer.board.size()) {
-            target = targetPlayer.board[targetIndex].get();
-        }
+        if (!isValidIndex(targetIndex, targetPlayer.board.size())) return false;
+        target = targetPlayer.board[targetIndex].get();
+        if (!target) return false;
+    } else if (targetIndex != -1) {
+        return false;
+    }
+
+    if (card->getManaCost() > player.mana) {
+        throw NotEnoughManaException(card->getName(), card->getManaCost());
     }
 
     spell->setTarget(target);
     player.mana -= card->getManaCost();
     spell->play();
 
-    // Vrăjile nu rămân pe tablă, ci sunt șterse din mână după utilizare.
     player.hand.erase(player.hand.begin() + handIndex);
 
     cleanupDefeatedCards();
@@ -262,29 +257,25 @@ bool Game::tryAttack(int attackerIndex, int targetIndex) {
     Player& attackerPlayer = currentPlayer();
     Player& defenderPlayer = opposingPlayer();
 
-    if (attackerIndex < 0 || attackerIndex >= (int)attackerPlayer.board.size() || 
-        targetIndex < 0 || targetIndex >= (int)defenderPlayer.board.size()) {
+    if (!isValidIndex(attackerIndex, attackerPlayer.board.size())
+        || !isValidIndex(targetIndex, defenderPlayer.board.size())) {
         return false;
     }
 
     auto* attacker = dynamic_cast<UnitCard*>(attackerPlayer.board[attackerIndex].get());
     auto* target   = dynamic_cast<UnitCard*>(defenderPlayer.board[targetIndex].get());
 
-    // Verificăm că ambele cărți există, sunt unități și sunt în viață.
     if (!attacker || !target || !attacker->isAlive() || !target->isAlive()) return false;
-    if (attacker->hasAttacked()) return false; // O unitate poate ataca o singură dată pe tur.
+    if (attacker->hasAttacked()) return false;
 
-    // --- Verificăm capcanele adversarului ---
-    // Dacă jucătorul care se apără are TrapCard-uri pe tablă, le declanșăm.
     for (auto& card : defenderPlayer.board) {
         auto* trap = dynamic_cast<TrapCard*>(card.get());
         if (trap && !trap->hasTriggered()) {
             trap->trigger(*attacker, *target);
-            break; // Se declanșează doar o singură capcană per atac.
+            break;
         }
     }
 
-    // Dacă atacatorul a murit din cauza capcanei, atacul nu mai continuă.
     if (!attacker->isAlive()) {
         cleanupDefeatedCards();
         updateGameOverState();
@@ -308,6 +299,28 @@ const std::string& Game::currentPlayerName() const {
 
 unsigned int Game::currentPlayerMana() const {
     return currentPlayer().mana;
+}
+
+const Card* Game::handCard(int index) const {
+    const auto& hand = currentPlayer().hand;
+    return isValidIndex(index, hand.size()) ? hand[index].get() : nullptr;
+}
+
+const Card* Game::boardCard(int index, bool isEnemy) const {
+    const auto& board = (isEnemy ? opposingPlayer() : currentPlayer()).board;
+    return isValidIndex(index, board.size()) ? board[index].get() : nullptr;
+}
+
+std::size_t Game::handSize() const {
+    return currentPlayer().hand.size();
+}
+
+std::size_t Game::boardSize(bool isEnemy) const {
+    return (isEnemy ? opposingPlayer() : currentPlayer()).board.size();
+}
+
+unsigned int Game::defeatedUnits(bool isEnemy) const {
+    return (isEnemy ? opposingPlayer() : currentPlayer()).defeatedUnitCards;
 }
 
 void Game::displayCurrentHand(std::ostream& os) const {

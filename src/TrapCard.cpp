@@ -53,10 +53,8 @@ void TrapCard::displayDetails(std::ostream& os) const {
     Card::displayDetails(os);
 }
 
-// Declanșează capcana: execută efectul și o marchează ca folosită.
-// După declanșare, Game::cleanupBoard() o va elimina de pe tablă.
 void TrapCard::trigger(UnitCard& attacker, UnitCard& target) {
-    if (isTriggered) return; // Protecție: nu se declanșează de două ori.
+    if (isTriggered) return;
     isTriggered = true;
     std::cout << ">>> TRAP ACTIVATED: " << name << "! <<<\n";
     if (effect) {

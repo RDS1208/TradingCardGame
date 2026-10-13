@@ -3,26 +3,31 @@
 #define TRADINGCARDGAME_GAMEHELPERS_H
 
 #include "Game.h"
+#include "Exceptions.h"
 
 #include <iostream>
 #include <limits>
 #include <string>
 
-inline void clearInput() {
-    std::cin.clear();
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+inline void clearInput(std::istream& input = std::cin) {
+    input.clear();
+    input.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 }
 
-inline int readInt(const std::string& prompt) {
+inline int readInt(const std::string& prompt, std::istream& input = std::cin,
+                   std::ostream& output = std::cout) {
     int value = 0;
     while (true) {
-        std::cout << prompt;
-        if (std::cin >> value) {
-            clearInput();
+        output << prompt;
+        if (input >> value) {
+            clearInput(input);
             return value;
         }
-        std::cout << "Invalid number. Try again.\n";
-        clearInput();
+        if (input.eof() || input.bad()) {
+            throw InputEndedException();
+        }
+        output << "Invalid number. Try again.\n";
+        clearInput(input);
     }
 }
 

@@ -1,24 +1,78 @@
-# Build directories
+# CMake build directories and generated files
 build/
-cmake-build-debug/
-cmake-build-local/
+build-*/
+cmake-build*/
+/out/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+Testing/
+Makefile
+build.ninja
+rules.ninja
+.ninja_deps
+.ninja_log
+compile_commands.json
+CMakeUserPresets.json
 
-/deck.txt
-
-# IDE files
-.idea/
-
-# Error logs
-*.err
-
-# Private documentation
-docs_private/
-
-# Executables and build output
-TradingCardGame.exe
+# Executables, libraries, and compiler output
+TradingCardGame
+TradingCardGameTests
+EdgeCaseTests
 *.exe
+*.out
 *.o
 *.obj
+*.a
+*.lib
+*.so
+*.so.*
+*.dylib
+*.dll
+*.pdb
+*.ilk
+*.pch
+*.gch
+*.d
 
+# Coverage and profiling output
+*.gcda
+*.gcno
+*.gcov
+*.profraw
+*.profdata
+/coverage/
 
+# Runtime copy; data/deck.txt is the source of truth
+/deck.txt
 
+# Local IDE settings
+.idea/
+.vscode/
+.vs/
+*.user
+*.suo
+*.sln.docstates
+
+# Logs, temporary files, and editor backups
+*.log
+*.err
+*.tmp
+*.swp
+*.swo
+*~
+
+# Operating system metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Local documentation
+/docs/
+/docs_private/

@@ -7,20 +7,16 @@
 
 class UnitCard : public Card {
 private:
-    // Contoare statice — aparțin clasei, nu unui obiect individual.
-    // Sunt actualizate în constructori și destructor pentru a urmări câte cărți există.
+    // Track unit lifecycle counts.
     static int totalCreated;
     static int totalDestroyed;
 
 public:
-    // AttackAction este un alias pentru un tip de funcție care primește doi UnitCard
-    // și nu returnează nimic. Permite stocarea de lambdas ca și cum ar fi date obișnuite.
     using AttackAction = std::function<void(UnitCard&, UnitCard&)>;
 
-    // Grupează cele două callback-uri opționale într-o singură structură pentru claritate.
     struct AttackEffects {
-        AttackAction onBefore = nullptr; // Se execută înainte de aplicarea daunei
-        AttackAction onAfter  = nullptr; // Se execută după aplicarea daunei
+        AttackAction onBefore = nullptr;
+        AttackAction onAfter  = nullptr;
     };
 
 private:

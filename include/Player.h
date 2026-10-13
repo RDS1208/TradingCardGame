@@ -7,12 +7,10 @@
 #include <string>
 #include <vector>
 
-// Declaram doar numele clasei ca sa nu includem tot fisierul Card.h si sa ingreunam compilarea.
+// Avoids including Card.h in this header.
 class Card;
 
 class Player {
-    // Declarăm aceste clase 'friend' ca să poată accesa variabilele private (board, mana etc).
-    // E ok pentru ca Game si Player sunt extrem de strans legate.
     friend class Game;
     friend class EffectRegistry;
 
@@ -29,7 +27,6 @@ public:
     Player();
     explicit Player(std::string name);
     
-    // Explicitam constructorii de move (unique_ptr nu poate fi copiat, doar mutat).
     Player(Player&&) = default;
     Player& operator=(Player&&) = default;
     ~Player();

@@ -3,64 +3,85 @@
 #define TRADINGCARDGAME_EXCEPTIONS_H
 
 #include <exception>
+#include <cstddef>
 #include <string>
 #include <iostream>
+#include <utility>
 
-// Clasa de baza simpla (non-template). Ne permite sa prindem TOATE erorile jocului
-// intr-un singur loc folosind 'catch (const GameExceptionBase& e)'.
+class InputEndedException : public std::exception {
+public:
+    const char* what() const noexcept override { return "Input ended."; }
+};
+
+// Common base for game exceptions.
 class GameExceptionBase : public std::exception {
 protected:
-    std::string mesaj;
+    std::string message;
 
 public:
-    explicit GameExceptionBase(const std::string& msg) : mesaj(msg) {}
+    explicit GameExceptionBase(const std::string& message) : message(message) {}
 
-    const char* what() const override {
-        return mesaj.c_str();
+    const char* what() const noexcept override {
+        return message.c_str();
     }
 };
 
-// Clasa sablon (template): 'template <typename T>' inseamna ca aceasta clasa
-// poate stoca orice tip de date pentru detalii (T poate fi un text/string sau un numar/unsigned),
-// fara sa fim nevoiti sa scriem o clasa complet noua pentru fiecare tip.
 template <typename T>
 class GameException : public GameExceptionBase {
 protected:
-    T detalii;
+    T details;
 
 public:
-    GameException(const std::string& msg, T det) : GameExceptionBase(msg), detalii(det) {}
+    GameException(const std::string& message, T details)
+        : GameExceptionBase(message), details(std::move(details)) {}
 
-    T getDetalii() const { return detalii; }
+    T getDetails() const { return details; }
 
-    // Declararea ca 'friend' (prieten) ii ofera functiei de mai jos permisiunea speciala
-    // de a accesa direct variabila protejata 'detalii'.
     template <typename U>
     friend void printExceptionDetails(const GameException<U>& ex);
 };
 
-// Functie sablon (template) libera care afiseaza detaliile tehnice ale oricarei exceptii.
+// Prints the typed details stored by a game exception.
 template <typename T>
 void printExceptionDetails(const GameException<T>& ex) {
-    std::cout << "  [Detalii tehnice]: " << ex.detalii << "\n";
+    std::cout << "  Details: " << ex.details << "\n";
 }
 
 class DeckLoadException : public GameException<std::string> {
 public:
-    explicit DeckLoadException(const std::string& fisier)
-        : GameException<std::string>("Nu am putut deschide fisierul " + fisier, fisier) {}
+    explicit DeckLoadException(const std::string& file)
+        : GameException<std::string>("Could not open deck file: " + file, file) {}
+
+    DeckLoadException(const std::string& file, const std::string& reason)
+        : GameException<std::string>("Could not load deck " + file + ": " + reason, file) {}
+
+    DeckLoadException(const std::string& file, std::size_t line, const std::string& reason)
+        : GameException<std::string>(
+              "Invalid record in " + file + ":" + std::to_string(line) + ": " + reason,
+              file + ":" + std::to_string(line)) {}
 };
 
-class InvalidCardStatException : public GameException<unsigned> {
+class InvalidDeckRecordException : public GameException<std::string> {
 public:
-    InvalidCardStatException(const std::string& numeCarte, unsigned manaCost)
-        : GameException<unsigned>("Cartea '" + numeCarte + "' are cost de mana invalid!", manaCost) {}
+    explicit InvalidDeckRecordException(const std::string& reason)
+        : GameException<std::string>("Invalid deck record: " + reason, reason) {}
+};
+
+class InvalidCardStatException : public GameExceptionBase {
+public:
+    InvalidCardStatException(const std::string& cardName, unsigned manaCost)
+        : GameExceptionBase("Card '" + cardName + "' has an invalid mana cost: "
+                            + std::to_string(manaCost)) {}
+
+    InvalidCardStatException(const std::string& cardName, const std::string& statName, int value)
+        : GameExceptionBase("Card '" + cardName + "' has invalid " + statName + ": "
+                            + std::to_string(value)) {}
 };
 
 class NotEnoughManaException : public GameException<unsigned> {
 public:
-    NotEnoughManaException(const std::string& numeCarte, unsigned costMana)
-        : GameException<unsigned>("Nu ai suficienta mana pentru a juca '" + numeCarte + "'!", costMana) {}
+    NotEnoughManaException(const std::string& cardName, unsigned manaCost)
+        : GameException<unsigned>("Not enough mana to play '" + cardName + "'.", manaCost) {}
 };
 
 #endif // TRADINGCARDGAME_EXCEPTIONS_H

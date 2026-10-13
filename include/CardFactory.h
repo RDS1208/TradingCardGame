@@ -6,11 +6,9 @@
 #include <memory>
 #include <string>
 
-// O fabrica (Simple Factory) care creeaza carti din liniile de text din deck.txt.
-// Am scos logica asta din Game.cpp ca sa fie mai curat codul.
+// Creates cards from validated deck records.
 class CardFactory {
 public:
-    // Folosim std::unique_ptr ca sa evitam memory leaks si sa scutim grija lui delete.
     static std::unique_ptr<Card> createCard(const std::string& line);
 };
 

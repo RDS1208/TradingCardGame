@@ -1,183 +1,222 @@
-# Trading Card Game — Joc de Cărți în C++
+# Trading Card Game in C++
 
-Un joc de cărți pe runde pentru doi jucători, implementat în C++ (standard C++20) cu accent pe **moștenire**, **polimorfism**, **gestiunea memoriei** prin smart pointers și **sistemul de excepții**.
+A two-player, turn-based console card game written in C++20. The project demonstrates inheritance, polymorphism, modern memory ownership, custom exceptions, and several design patterns.
 
 ---
 
-## Structura Proiectului
+## Project Structure
 
-```
+```text
 TradingCardGame/
-├── CMakeLists.txt             # Configurare build (CMake ≥ 4.2, C++20)
+├── CMakeLists.txt
+├── .github/workflows/
+│   └── build.yml              # Build and test automation
 ├── data/
-│   └── deck.txt               # Pachetul de cărți — citit la rulare
+│   └── deck.txt               # Runtime card definitions
+├── examples/
+│   └── gameplay.txt           # Recorded console session
 ├── include/
-│   ├── Card.h                 # Clasa abstractă de bază
-│   ├── UnitCard.h             # Unitate cu atac și HP
-│   ├── SpellCard.h            # Vrajă cu efect instant
-│   ├── StructureCard.h        # Clădire cu efect pasiv pe tur
-│   ├── TrapCard.h             # Capcană declanșată la atacul adversarului
-│   ├── Player.h               # Jucător: deck, mână, tablă
-│   ├── Game.h                 # Logica principală a jocului
-│   ├── GameHelpers.h          # Funcții inline de interfață consolă
-│   ├── EffectRegistry.h       # Fabrică de efecte (lambda-uri)
-│   └── Exceptions.h           # Ierarhia de excepții proprii
-└── src/
-    ├── main.cpp               # Punctul de intrare
-    ├── Card.cpp
-    ├── UnitCard.cpp
-    ├── SpellCard.cpp
-    ├── StructureCard.cpp
-    ├── TrapCard.cpp
-    ├── Player.cpp
-    ├── Game.cpp
-    └── EffectRegistry.cpp
+│   ├── Card.h                 # Abstract card interface
+│   ├── UnitCard.h             # Unit cards with attack and health
+│   ├── SpellCard.h            # One-shot spell cards
+│   ├── StructureCard.h        # Structures with turn effects
+│   ├── TrapCard.h             # Traps triggered by attacks
+│   ├── Player.h               # Deck, hand, and board state
+│   ├── Game.h                 # Game rules and turn handling
+│   ├── GameHelpers.h          # Console input and display helpers
+│   ├── EffectRegistry.h       # Effect lookup
+│   ├── CardFactory.h          # Card creation from deck records
+│   └── Exceptions.h           # Game exception types
+├── src/
+│   ├── main.cpp               # Application entry point
+│   └── ...                    # Card, game, and effect implementations
+└── tests/
+    ├── TradingCardGameTests.cpp
+    ├── EdgeCaseTests.cpp
+    └── TestSupport.h          # Isolated test fixtures
 ```
-Pachetul de cărți (`data/deck.txt`) este copiat automat lângă executabil prin regula `POST_BUILD` din `CMakeLists.txt`.
 
----
+CMake copies `data/deck.txt` beside the executable. The game also loads `data/deck.txt` when launched from the project root.
 
-## Cum se joacă
+### Build and Run
 
-Fiecare jucător primește un pachet de cărți citit din `deck.txt`. La început, fiecare trage 4 cărți în mână. Pe rând, jucătorii pot:
+Requirements: CMake 3.20 or newer and a C++20 compiler.
 
-1. **Juca o carte** din mână pe tablă (costă mana)
-2. **Vedea mâna** curentă
-3. **Vedea ambele table** de joc
-4. **Ataca** o unitate adversă cu o unitate proprie
-5. **Termina turul**
-6. **Ieși din joc**
+```sh
+cmake -S . -B build
+cmake --build build
+./build/TradingCardGame
+ctest --test-dir build --output-on-failure
+```
 
-La fiecare tur nou, jucătorul trage o carte și primește +1 mana (maxim 10).
+For generators such as Visual Studio, build with `--config Release` and test with `-C Release`.
 
-Mana este resursa folosita pentru a juca o carte din mana, fiecare carte are indiferent de tip un cost de mana (1->10).
+The GitHub Actions workflow builds and tests on Linux, Windows, and macOS. A separate Linux job checks for undefined behavior. Tests use fixed shuffle seeds and unique temporary directories; normal games use random seeds.
 
-Jucatorii folosesc mana si joaca cartile din mana pe masa,fiecare jucator are propria masa cu cartile jucate,carti ce pot fii atacate de jucatorul advers
+To run undefined behavior checks locally with GCC or Clang:
 
-**Condiția de victorie:** Primul jucător care pierde 6 unități de pe tablă pierde meciul.
+```sh
+cmake -S . -B build-sanitized -DCMAKE_BUILD_TYPE=Debug \
+  -DCMAKE_CXX_FLAGS="-fsanitize=undefined -fno-sanitize-recover=all -Wall -Wextra -Wpedantic" \
+  -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=undefined"
+cmake --build build-sanitized
+ctest --test-dir build-sanitized --output-on-failure
+```
 
----
+### Understanding the Tests
 
-## Tipuri de Cărți
+Each test is a normal C++ function: create the objects, perform an action, and check the result. The `check(condition, message)` helper reports a failure when the condition is false.
 
-Toate cărțile moștenesc din clasa abstractă `Card` și suprascriu funcțiile virtuale pure.
+For example, a unit with 5 health fighting a unit with 3 attack should have 2 health afterward:
 
-| Tip | Descriere | Particularitate |
-|-----|-----------|-----------------|
-| **UnitCard** | Unitate cu atac și HP | Poate ataca o dată pe tur; are efecte opționale de atac (ex: Vampiric Strike) |
-| **SpellCard** | Vrajă cu efect instant | Se consumă imediat la joc — nu rămâne pe tablă |
-| **StructureCard** | Clădire cu HP și efect pasiv | Nu atacă, dar declanșează un efect la fiecare schimbare de tur |
-| **TrapCard** | Capcană ascunsă | Stă pe tablă până când adversarul atacă; se declanșează automat, apoi dispare |
+```cpp
+UnitCard attacker("Attacker", 1, 5, 5);
+UnitCard target("Target", 1, 3, 6);
+attacker.onAttack(target);
+check(attacker.getHp() == 2, "The attacker should have 2 health");
+```
 
----
+`TradingCardGameTests.cpp` checks card creation and game rules. `EdgeCaseTests.cpp` checks invalid input, health limits, and interrupted combat. Both files call their test functions directly from `main()`.
 
-## Concepte C++ Utilizate
+`TestSupport.h` contains one helper class. It creates a temporary deck file for a test, then restores the working directory and removes that file when the test ends. The tests never replace the project's actual deck.
 
-### Moștenire și Polimorfism
-- **Ierarhie de clase:** `Card` → `UnitCard`, `SpellCard`, `StructureCard`, `TrapCard`
-- **Funcții pur virtuale:** `onPlayEffect()`, `onDeath()`, `clone()`, `displayDetails()`
-- **Pattern NVI (Non-Virtual Interface):** `play()` apelează `onPlayEffect()` polimorfic; `display()` apelează `displayDetails()`
-- **Virtual constructors:** `clone()` returnează `std::unique_ptr<Card>`
+## How to Play
 
-### Gestiunea Memoriei
-- **Smart pointers:** `std::unique_ptr<Card>` peste tot (deck, mână, tablă)
-- **Copy-control complet:** constructor de copiere, operator de atribuire (copy-and-swap idiom) și destructor pentru `Card`, `UnitCard`, `SpellCard`, `StructureCard`, `TrapCard`
-- **Move semantics:** `Player` este move-only (move constructor / move assignment = default; copy dezactivat implicit de `unique_ptr`)
+Each player receives a shuffled copy of the deck and draws four cards at the start. Players take turns. On each turn, a player draws one card and gains one mana, up to a maximum of ten.
 
-### Excepții
-Ierarhie independentă de ierarhia Card:
-- `GameException` ← baza (moștenește din `std::exception`)
-  - `DeckLoadException` — fișierul deck.txt nu poate fi deschis
-  - `InvalidCardStatException` — carte cu statistici invalide (mana > 10)
-  - `NotEnoughManaException` — jucătorul nu are suficientă mana
+The menu lets each player:
 
-### Alte Concepte
-- **`dynamic_cast`** pentru downcast-uri sigure la procesarea tablei
-- **`friend class`** — `EffectRegistry` și `Game` accesează membrii privați ai `Player`; `EffectRegistry` accesează membrii privați ai `Game`
-- **`friend` funcții libere** — `swap()` pentru fiecare clasă din ierarhie (copy-and-swap idiom)
-- **`static`** membri și funcții: contoare (`totalCreated`, `totalDestroyed`, `nextId`), constante (`maxMana`, `defeatLimit`, `startingHandSize`), funcții helper cu legătură internă
-- **STL:** `std::vector`, `std::shuffle`, `std::swap`, `std::function`, `std::istringstream`, `std::mt19937`
-- **`const`-correctness:** parametri, funcții membre, referințe
-- **Delegating constructors:** constructorii simpli delegă la constructorii compleți (ex: `TrapCard`, `StructureCard`)
-- **Forward declarations:** `class Game;` în `StructureCard.h`, `class Card;` în `Player.h`, `class UnitCard;` în `TrapCard.h` — evită dependențe circulare
+1. Play a unit, structure, or trap, or cast a spell from their hand.
+2. View their hand.
+3. View both boards.
+4. Attack an opposing unit.
+5. End their turn.
+6. Exit the game.
 
-### Sistemul de Efecte
-Cărțile au efecte configurabile prin lambda-uri, stocate ca `std::function`:
-- **UnitCard:** `AttackEffects` (onBefore / onAfter atac)
-- **SpellCard:** `SpellEffect` (efect instant pe o țintă)
-- **StructureCard:** `TurnChangeEffect` (efect la fiecare tur)
-- **TrapCard:** `TrapEffect` (efect la declanșare, primește atacatorul și ținta)
+Cards cost between zero and ten mana. A unit can attack once per turn. When units fight, both deal damage at the same time. The defending player's first armed trap also triggers before combat and is removed afterward. Spells are consumed when cast. A player loses after six of their units are defeated. Destroyed structures and triggered traps do not count toward this limit.
 
-Efectele sunt definite în `EffectRegistry.cpp` și mapate prin chei-text din `deck.txt` (ex: `"FireballEffect"`, `"VampiricStrike"`).
+Before-attack effects resolve before combat damage. If either unit dies during that effect, combat stops and the attack is spent. Healing saturates at the largest value supported by `int`. Closing input exits the game cleanly.
+
+A short recorded console session is available in [examples/gameplay.txt](examples/gameplay.txt). Card order varies because decks are shuffled.
+
+## Card Types
+
+Every card derives from the abstract `Card` class and implements its type-specific behavior.
+
+| Type | Description | Behavior |
+| --- | --- | --- |
+| `UnitCard` | A unit with attack and health | Attacks once per turn and can apply optional attack effects. |
+| `SpellCard` | A one-shot spell | Resolves its effect and is removed from the hand. |
+| `StructureCard` | A structure with health | Remains on the board and can apply an effect when its owner's turn begins. |
+| `TrapCard` | A hidden trap | Triggers on an opposing attack, applies its effect, then leaves the board. |
+
+## C++ Concepts Used
+
+### Inheritance and Polymorphism
+
+- The hierarchy is `Card` to `UnitCard`, `SpellCard`, `StructureCard`, and `TrapCard`.
+- Pure virtual functions define card behavior, cloning, and display details.
+- The Non-Virtual Interface pattern keeps `play()` and `display()` consistent while calling type-specific virtual functions.
+- `clone()` provides polymorphic copying and returns `std::unique_ptr<Card>`.
+
+### Memory Management
+
+- `std::unique_ptr<Card>` owns cards in decks, hands, and boards.
+- Moving a card transfers its ownership between containers.
+- Card classes provide copy operations where polymorphic copies are needed; derived assignments use copy-and-swap.
+- `Player` is movable and non-copyable because it owns cards exclusively.
+
+### Exceptions
+
+The custom exception hierarchy derives from `std::exception` and provides errors for deck loading, invalid card data, malformed records, and insufficient mana.
+
+### Other C++ Features
+
+- `dynamic_cast` checks card types when applying type-specific game rules.
+- Friend declarations let `Game` and `EffectRegistry` access the closely related player and game state they need.
+- Static members track card IDs and unit lifecycle counts.
+- Standard library features include `std::vector`, `std::shuffle`, `std::function`, `std::istringstream`, and `std::mt19937`.
+- Constructors and member functions use const references and const-correct accessors where appropriate.
+- Forward declarations reduce header dependencies.
+
+### Effect System
+
+Card effects are stored as `std::function` callbacks and selected by keys in `data/deck.txt`:
+
+- `UnitCard` supports callbacks before and after an attack.
+- `SpellCard` applies an effect to a selected card.
+- `StructureCard` applies an effect when the owner's turn begins.
+- `TrapCard` applies an effect when an opposing unit attacks.
+
+Effects are defined in `EffectRegistry.cpp`. Existing keys include `FireballEffect`, `HealEffect`, `VampiricStrike`, `HealBase`, and `DamageAttacker`.
 
 ### Design Patterns
-- **Singleton**: `EffectRegistry` garantează că există o singură instanță (un singur registru global) din care clasele își pot prelua efectele lambda.
-- **Factory (Simple Factory)**: `CardFactory` se ocupă de crearea cărților din șirurile de caractere (parsarea fișierului deck.txt), decuplând logica de generare a cărților de logica principală din `Game.cpp`.
-- **Strategy**: Efectele menționate mai sus (`std::function` transmise în constructor) reprezintă un șablon Strategy, modificând comportamentul cărților fără a crea o ierarhie stufoasă de clase.
 
-### Programare Generică (Templates)
-Sistemul de excepții folosește o abordare template pentru a transmite detalii suplimentare dinamice:
-- Clasa abstractă `GameExceptionBase` pentru prinderea generică.
-- Clasa șablon `GameException<T>` cu un atribut `T detalii`.
-- Excepțiile derivate asociază tipuri concrete: `DeckLoadException` (`T = std::string`), `NotEnoughManaException` (`T = unsigned`).
-- Funcția liberă template `printExceptionDetails(const GameException<T>&)` afișează conținutul generic.
+- **Singleton:** `EffectRegistry::getInstance()` provides the shared effect registry.
+- **Simple Factory:** `CardFactory::createCard()` validates a deck record and creates the matching card type.
+- **Strategy:** Lambda callbacks provide interchangeable card effects without creating a subclass for every effect.
+- **Non-Virtual Interface:** Public base-class operations apply shared behavior before dispatching to virtual card-specific behavior.
 
----
+### Templates
 
-## Formatul Fișierului deck.txt
+`GameException<T>` stores typed details alongside an error message. `GameExceptionBase` provides a common catch type, and `printExceptionDetails()` formats the stored detail for the console.
 
-Fiecare linie descrie o carte. Liniile goale și cele care încep cu `#` sunt ignorate.
+## Deck File Format
 
-```
+Each non-empty line in `data/deck.txt` defines one card. Lines whose first non-space character is `#` are comments. The summary is the remainder of the line, so it may contain additional `|` characters.
+
+```text
 Unit|Name|Mana|Attack|HP|EffectKey|EffectSummary
 Spell|Name|Mana|EffectKey|EffectSummary
 Structure|Name|Mana|HP|EffectKey|EffectSummary
 Trap|Name|Mana|EffectKey|EffectSummary
 ```
 
-Exemplu:
-```
+Example:
+
+```text
 Unit|Knight|4|4|5|None|Heavy charge
-Spell|Fireball|2|FireballEffect|Deal 3 damage to any unit.
-Structure|Healing Shrine|2|5|HealBase|Heals all units 1 HP each turn.
-Trap|Spike Trap|1|DamageAttacker|Deals 2 damage to the attacker.
+Spell|Fireball|2|FireballEffect|Deal 3 damage to a unit.
+Structure|Healing Shrine|2|5|HealBase|Heal your units by 1 at the start of your turn.
+Trap|Spike Trap|1|DamageAttacker|Deal 2 damage to the attacker.
 ```
 
-## Exemple jocuri asemanatoare
-````
+Card records require valid integer fields. Mana must be between zero and ten, and unit attack, unit health, and structure health must be positive. Unsupported card types and effect keys are reported as deck errors with the file and line number.
 
-Hearthstone
-Magic the Gathering
-Yu-Gi-Oh!
+Empty decks and decks containing only comments or whitespace are rejected.
 
+## Similar Games
 
+- Hearthstone
+- Magic: The Gathering
+- Yu-Gi-Oh!
 
-````
+## Project Summary
 
-Rezumatul Proiectului
-Proiectul consta in proiectarea si implementarea a unui joc de tip Trading Card Game (TCG) in C++20. Arhitectura este complet polimorfica si modulara, fiind structurata in jurul unei colectii dinamice de carti gestionate prin pointeri inteligenti. Jocul simuleaza interactiunea dintre doi jucatori care isi gestioneaza pachetele de carti, mana disponibila, mana curenta si zona de lupta (tabla). Logica include parsarea pachetelor dintr-un fisier extern (deck.txt), instantierea dinamica a cartilor, gestionarea fazelor de joc (faza de jucare a cartilor pe masa, faza de vraji, lupta efectiva si curatarea mesei).
-1.Ierarhia POO si Mecanismele Polimorfice
-Pilonul central al codului meu este clasa abstracta Card, care defineste interfata comuna si regulile pe care toate tipurile de carti trebuie sa le respecte. Am blocat instantierea directa a acestei clase prin declararea unor functii virtuale pure. Din aceasta clasa de baza am derivat cele 4 tipuri specifice de carti, fiecare avand un comportament distinct pe tabla: UnitCard (entitati cu atac si HP), SpellCard (efecte instantanee), StructureCard (efecte pasive turn-by-turn) si TrapCard (carti care declanseaza un efect in momentul in care inamicul ataca).
-Pentru a preveni scurgerile de memorie (memory leaks) la distrugerea obiectelor, am definit explicit un destructor virtual in clasa de baza:
-Fara acest detaliu, in momentul in care as fi sters un element din vectorul de tip Card* care puncta in realitate catre un UnitCard, compilatorul ar fi apelat doar destructorul parintelui. Acest lucru ar fi lasat date nesterse in memorie si ar fi blocat logica specifica claselor derivate (cum ar fi decrementarea contoarelor statice pentru unitatile active).
-Pentru apelul efectelor, am ales sa folosesc designul NVI (Non-Virtual Interface). Functia publica play() este non-virtuala si ofera un comportament standard invariant (cum ar fi logarea ID-ului cartii), apeland in interiorul ei metoda protejata/privata onPlayEffect(). Acest lucru imi garanteaza ca procesul de baza al plasarii unei carti ramane neschimbat, dar comportamentul final este dictat pur polimorfic de tipul cartii.
-2.Managementul Modern al Memoriei si Semantica de Mutare
-Pentru a elimina complet managementul manual al memoriei prin new si delete, care predispune codul la pointeri suspendati (dangling pointers) sau eliberari duble, am structurat containerele de joc (mana si tabla) folosind pointeri de tip unique_ptr.
-Deoarece un std::unique_ptr nu permite copierea (constructorul de copiere fiind sters), transferul unei carti dintr-un container in altul de exemplu, in momentul in care jucatorul plaseaza o carte din mana pe tabla este implementat exclusiv prin std::move:
-In cazul relatiilor in care nu am nevoie de proprietate asupra obiectului cum ar fi un SpellCard care trebuie doar sa aplice un efect temporar asupra unei unitati de pe tabla am folosit pointeri bruti simpli (Card*). Adresa este extrasa temporar prin metoda .get(), indicand clar ca viata obiectului tinta nu depinde de vraja care il acceseaza.
-3.Logica Jocului si Siguranta Tipului la Rulare (RTTI)
-In implementarea metodelor de interactiune din src/Game.cpp, am prioritizat lizibilitatea. Pentru a evita scrierea unor sintaxe greoaie cu smart pointers in mijlocul verificarilor de mana si costuri, extrag temporar un pointer brut (Card* card = player.hand[index].get();) pentru validari inainte de a muta efectiv resursa.
-Pentru faza de curatare a tablei (cleanupBoard), am evitat algoritmi complexi care ar fi amestecat ordinea cartilor si am implementat o abordare liniara directa: parcurg tabla curenta, filtrez obiectele valide (unitati sau structuri cu HP>0 si capcane nedeclansate) intr-un vector nou de supravietuitori, iar la final inlocuiesc vechiul container.
-Deoarece containerele stocheaza tipul generic std::unique_ptr, in momentele in care logica de combat necesita accesarea unor atribute specifice claselor derivate (cum ar fi atacul unei unitati), folosesc mecanismul RTTI prin operatorul dynamic_cast:
-Daca pointerul generic indica o carte care nu este o unitate (de exemplu, o capcana), cast-ul returneaza in siguranta nullptr. Verificarea acestui rezultat imi permite sa procesez lupta fara a risca erori de accesare a memoriei la rulare.
-4.Gestiunea Generica a erorilor prin Sabloane
-Sistemul de exceptii pe care l-am proiectat este complet izolat de ierarhia cartilor, respectand arhitectura de tip Separation of Concerns. Pentru a acoperi cerintele de programare generica, am transformat clasa de exceptii intr-un sablon (template):
-Parametrul generic T imi permite sa refolosesc aceeasi clasa de exceptie pentru contexte total diferite: pot stoca un std::string pentru a retina numele fisierului in cazul unei erori de citire a pachetului sau un tip numeric unsigned pentru a transmite valoarea exacta a manei lipsa in timpul unui turn.
-Pentru a pastra datele incapsulate, am declarat o functie prieten (friend function) in interiorul clasei template, oferindu-i acesteia dreptul de a accesa membrul privat ce contine detaliile erorii strict pentru formatarea mesajului in consola, fara a expune metode de tip getter inutile.
-4.Integrarea sabloanelor de proiectare (Design Patterns)
-Pentru a asigura modularitatea si extensibilitatea jocului, am integrat trei sabloane de proiectare fundamentale:
-•	Singleton (EffectRegistry): Am garantat existenta unei singure instante a registrului de efecte in memorie prin blocarea constructorilor, stergerea operatorilor de copiere (= delete) si expunerea unei metode statice getInstance() care returneaza o referinta la o instanta statica locala.
-•	Simple Factory (CardFactory): Am izolat complet logica de instantiere a obiectelor. Metoda sa statica parseaza liniile de text din deck.txt, identifica cuvintele cheie (Unit, Spell etc.) si returneaza tipul corect de carte incapsulat direct intr-un pointer inteligent. Restul jocului nu stie cum se construiesc cartile, ci doar le foloseste interfata.
-•	Strategy: In loc sa creez sute de subclase pentru fiecare efect in parte am utilizat std::function si expresii lambda transmise la constructie. Astfel, doua instante diferite ale clasei SpellCard pot executa strategii complet diferite (una ataca, una vindeca) la apelul aceleiasi metode polimorfice, comportamentul fiind injectat dinamic.
+This project implements a two-player trading card game in C++20. It uses a polymorphic card collection with exclusive ownership, loads card definitions from a text file, and handles turns, spells, combat, and board cleanup.
 
+### 1. Object-Oriented Design and Polymorphism
 
+`Card` defines the shared interface for all card types. Its pure virtual functions prevent direct construction and require each derived type to provide its own play, death, cloning, and display behavior. A virtual destructor ensures derived objects are destroyed correctly through base-class pointers.
+
+The Non-Virtual Interface approach keeps `play()` and `display()` as stable public operations while delegating card-specific behavior to virtual functions.
+
+### 2. Smart Pointers and Move Semantics
+
+Decks, hands, and boards store cards in `std::unique_ptr`. Playing or drawing a card transfers ownership with `std::move`, avoiding manual `new` and `delete`. Temporary non-owning `Card*` pointers are used only while accessing a card owned by a container.
+
+### 3. Game Rules and Runtime Type Checks
+
+`Game` validates indices and card types before acting. `dynamic_cast` provides checked access to unit, structure, and trap behavior. Board cleanup removes defeated units, destroyed structures, and triggered traps while counting only defeated units toward the loss condition.
+
+Unit combat applies each unit's damage simultaneously. Trap effects resolve before that combat, and spell effects resolve against the selected board card.
+
+### 4. Generic Exception Handling
+
+`GameException<T>` stores error details with the message. `GameExceptionBase` supports common exception handling, while derived exceptions represent deck errors, invalid card data, and insufficient mana.
+
+### 5. Design Patterns
+
+- **Singleton:** `EffectRegistry` has one shared instance and cannot be copied or moved.
+- **Simple Factory:** `CardFactory` parses deck records and creates the corresponding card through a `std::unique_ptr<Card>`.
+- **Strategy:** `std::function` callbacks and lambdas inject behavior into cards at construction time.
